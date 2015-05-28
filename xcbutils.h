@@ -1,8 +1,8 @@
 /********************************************************************
- KWin - the KDE window manager
  This file is part of the KDE project.
 
-Copyright (C) 2012, 2013 Martin Gräßlin <mgraesslin@kde.org>
+Copyright (C) 2012, 2013 Martin Graesslin <mgraesslin@kde.org>
+Copyright (C) 2015 David Edmudson <davidedmundson@kde.org>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,6 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xcb/composite.h>
 #include <xcb/randr.h>
 #include <xcb/shm.h>
+#include <xcb/xcb_icccm.h>
+#include <xcb/xcb_atom.h>
+#include <xcb/xcb_event.h>
+#include <xcb/damage.h>
+
 
 #include <QX11Info>
 
@@ -102,16 +107,19 @@ private:
 class Atoms {
 public:
     Atoms() :
-        _XEMBED("_XEMBED")
+        xembedAtom("_XEMBED"),
+        selectionAtom(xcb_atom_name_by_screen("_NET_SYSTEM_TRAY", QX11Info::appScreen())),
+        opcodeAtom("_NET_SYSTEM_TRAY_OPCODE")
     {}
 
-//     Atom _XEMBED_INFO;
-//     Atom _NET_SYSTEM_TRAY_OPCODE;
-    Atom _XEMBED;   
+    Atom selectionAtom;
+    Atom opcodeAtom;
+    Atom xembedAtom;
+    
 };
 
 extern Atoms* atoms;
 
 } // namespace Xcb
 
-#endif // KWIN_X11_UTILS_H
+#endif // KWIN_XCB_UTILS_H

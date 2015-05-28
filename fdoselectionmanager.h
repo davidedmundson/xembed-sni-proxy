@@ -25,9 +25,6 @@
 #include <QWidget>
 #include <QAbstractNativeEventFilter>
 
-class Notification;
-class Task;
-class X11EmbedPainter;
 class FdoSelectionManagerPrivate;
 
 class FdoSelectionManager : public QWidget, public QAbstractNativeEventFilter
@@ -36,21 +33,17 @@ class FdoSelectionManager : public QWidget, public QAbstractNativeEventFilter
 
 public:
     static FdoSelectionManager *manager();
-    static X11EmbedPainter *painter();
 
     FdoSelectionManager();
     ~FdoSelectionManager();
 
     void addDamageWatch(WId client);
 //     void removeDamageWatch(QWidget *container);
-    bool haveComposite() const;
-
-signals:
-//     void taskCreated(SystemTray::Task *task);
+    
+//        void taskCreated(SystemTray::Task *task);
 //     void notificationCreated(SystemTray::Notification *notification);
 
 protected:
-//     bool x11Event(XEvent *event);
     bool nativeEventFilter(const QByteArray & eventType, void * message, long * result) Q_DECL_OVERRIDE;
 
 private slots:

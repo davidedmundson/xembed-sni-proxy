@@ -50,7 +50,7 @@ xembed_message_send(xcb_window_t towin,
     ev.data.data32[2] = d1;
     ev.data.data32[3] = d2;
     ev.data.data32[4] = d3;
-    ev.type = Xcb::atoms->_XEMBED;
+    ev.type = Xcb::atoms->xembedAtom;
     xcb_send_event(QX11Info::connection(), false, towin, XCB_EVENT_MASK_NO_EVENT, (char *) &ev);
 }
 
@@ -64,7 +64,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     auto window = new QWidget;
     window->show();
     
-//     xembed_info_t winInfo;
     xcb_get_property_cookie_t em_cookie;
     const uint32_t select_input_val[] =
     {
@@ -72,9 +71,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
             | XCB_EVENT_MASK_PROPERTY_CHANGE
             | XCB_EVENT_MASK_ENTER_WINDOW
     };
-
-//     em_cookie = xcb_get_property_unchecked(QX11Info::connection(), false, wid, 0,
-//                                       XCB_GET_PROPERTY_TYPE_ANY, 0L, 2);
     
     //set a background (ideally I want this transparent)
     const uint32_t backgroundPixel[4] = {0,0,0,0};
@@ -98,13 +94,11 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     xembed_message_send(wid, XEMBED_EMBEDDED_NOTIFY, 0, window->winId(), 0);
     
     //resize window we're embedding
-    const int base_size = 48;
-    const uint32_t config_vals[4] = { 0, 0 , base_size, base_size };
+    const int baseSize = 48;
+    const uint32_t config_vals[4] = { 0, 0 , baseSize, baseSize };
     xcb_configure_window(QX11Info::connection(), wid,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              config_vals);
-//     xcb_map_window(QX11Info::connection(), wid);
-
     
     update();
     QTimer *t = new QTimer(this);
