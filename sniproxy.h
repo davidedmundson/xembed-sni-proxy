@@ -34,6 +34,12 @@ public:
 
     void update();
     
+private Q_SLOTS:
+    void realUpdate();
+    void onActivateRequested (bool active, const QPoint &pos);
+    void onScrollRequested (int delta, Qt::Orientation orientation);
+    void onSecondaryActivateRequested(const QPoint &pos);
+    
 private:
     WId m_windowId;
     KStatusNotifierItem *m_sni;

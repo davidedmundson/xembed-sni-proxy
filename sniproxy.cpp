@@ -26,13 +26,13 @@
 #include <xcb/xcb_event.h>
 
 #include "xcbutils.h"
-#include <../../opt/qt5/include/QtCore/QTimer>
 
 #include <QWidget>
 #include <QDebug>
 #include <QX11Info>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QTimer>
 
 #include <kstatusnotifieritem.h>
 
@@ -61,6 +61,14 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     m_sni(new KStatusNotifierItem(this))
 {
     m_sni->setStatus(KStatusNotifierItem::Active);
+    m_sni->setStandardActionsEnabled(false);
+    
+    connect(m_sni, SIGNAL(activateRequested(bool,QPoint)), this, SLOT(onActivateRequested(bool,QPoint)));
+    connect(m_sni, SIGNAL(scrollRequested(int,Qt::Orientation)), this, SLOT(onScrollRequested(int,Qt::Orientation)));
+    connect(m_sni, SIGNAL(secondaryActivateRequested(QPoint)), this, SLOT(onSecondaryActivateRequested(QPoint)));
+    //TODO KStatusNotifierItem doesn't pass "contextMenu requested" which exists in the SNI spec if no context menu object is provided
+    //may have to go lower level SNI DBus
+    
     auto window = new QWidget;
     window->show();
     
@@ -79,7 +87,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
     xcb_change_window_attributes(QX11Info::connection(), wid, XCB_CW_EVENT_MASK,
                                  select_input_val);
-
     
     /* we grab the window, but also make sure it's automatically reparented back
      * to the root window if we should die.
@@ -89,7 +96,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
                         window->winId(),
                         0, 0);
     
-
     //tell client we're embedding it
     xembed_message_send(wid, XEMBED_EMBEDDED_NOTIFY, 0, window->winId(), 0);
     
@@ -101,14 +107,52 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
                              config_vals);
     
     update();
-    QTimer *t = new QTimer(this);
-    t->setInterval(1000);
-    connect(t, &QTimer::timeout, this, &SNIProxy::update);
-    t->start();
 }
 
 void SNIProxy::update()
 {
+    realUpdate();
+    //bodge to remove
+    QTimer::singleShot(100, this, SLOT(realUpdate()));
+}
+
+void SNIProxy::realUpdate()
+{
     QPixmap image = qApp->primaryScreen()->grabWindow(m_windowId);
     m_sni->setIconByPixmap(image);
 }
+
+
+
+void SNIProxy::onActivateRequested(bool active, const QPoint& pos)
+{
+    qDebug() << "activate requested";
+   
+    xcb_button_press_event_t event;
+    memset(&event, 0x00, sizeof(event));
+    event.time = XCB_CURRENT_TIME;
+    event.response_type = XCB_BUTTON_PRESS;
+    event.event = m_windowId;
+    event.same_screen = 1;
+    event.root = QX11Info::appRootWindow();
+    event.root_x = 5;
+    event.root_y = 5;
+    event.event_x = 5;
+    event.event_y = 5;
+    event.child = m_windowId;
+    event.state = XCB_BUTTON_MASK_1; 
+        
+    xcb_send_event(QX11Info::connection(), false, m_windowId, XCB_EVENT_MASK_BUTTON_PRESS, (char *) &event);
+
+}
+
+void SNIProxy::onScrollRequested(int delta, Qt::Orientation orientation)
+{
+    qDebug() << "scroll requested";
+}
+
+void SNIProxy::onSecondaryActivateRequested(const QPoint& pos)
+{
+    qDebug() << "secondary activate adsfasdflkj2";
+}
+
