@@ -20,7 +20,6 @@
  ***************************************************************************/
 
 #include "fdoselectionmanager.h"
-#include "x11embedpainter.h"
 
 #include <QDebug>
 
@@ -39,23 +38,21 @@
 
 // #include <config-X11.h>
 
+#include <KWindowSystem>
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_event.h>
+#include <xcb/composite.h>
+#include <xcb/damage.h>
+
 // #include <X11/Xlib.h>
 // #include <X11/Xatom.h>
 // #include <X11/extensions/Xrender.h>
 
 #include "xcbutils.h"
-
-#ifdef HAVE_XFIXES
-#  include <X11/extensions/Xfixes.h>
-#endif
-
-#ifdef HAVE_XDAMAGE
-#  include <X11/extensions/Xdamage.h>
-#endif
+#include "sniproxy.h"
 
 #ifdef HAVE_XCOMPOSITE
 #  include <X11/extensions/Xcomposite.h>
@@ -66,7 +63,6 @@
 #define SYSTEM_TRAY_CANCEL_MESSAGE  2
 
 static FdoSelectionManager *s_manager = 0;
-static X11EmbedPainter *s_painter = 0;
 
 #if defined(HAVE_XFIXES) && defined(HAVE_XDAMAGE) && defined(HAVE_XCOMPOSITE)
 struct DamageWatch
@@ -113,7 +109,6 @@ struct MessageRequest
     QByteArray message;
 };
 
-
 class FdoSelectionManagerPrivate
 {
 public:
@@ -147,7 +142,7 @@ public:
 
     void createNotification(WId winId);
 
-    void handleRequestDock(xcb_window_t embed_win,  void *info);
+    void handleRequestDock(xcb_window_t embed_win);
 //     void handleBeginMessage(const XClientMessageEvent &event);
 //     void handleMessageData(const XClientMessageEvent &event);
 //     void handleCancelMessage(const XClientMessageEvent &event);
@@ -157,6 +152,11 @@ public:
     xcb_atom_t opcodeAtom;
     xcb_atom_t messageAtom;
     xcb_atom_t visualAtom;
+
+    uint8_t damageEventBase;
+    u_int32_t m_damage;
+    
+    WId m_winId;
 
 //     QHash<WId, MessageRequest> messageRequests;
 //     QHash<WId, FdoTask*> tasks;
@@ -174,6 +174,16 @@ FdoSelectionManager::FdoSelectionManager()
     // until after construction is done and the creating object has a
     // chance to connect.
     QTimer::singleShot(0, this, SLOT(initSelection()));
+    
+    
+    
+    xcb_connection_t *c = QX11Info::connection();
+    xcb_prefetch_extension_data(c, &xcb_damage_id);
+    const auto *reply = xcb_get_extension_data(c, &xcb_damage_id);
+    d->damageEventBase = reply->first_event;
+    if (reply->present) {
+        xcb_damage_query_version_unchecked(c, XCB_DAMAGE_MAJOR_VERSION, XCB_DAMAGE_MINOR_VERSION);
+    }
 }
 
 
@@ -187,8 +197,6 @@ FdoSelectionManager::~FdoSelectionManager()
 
     if (s_manager == this) {
         s_manager = 0;
-        delete s_painter;
-        s_painter = 0;
     }
 
     delete d;
@@ -199,36 +207,27 @@ FdoSelectionManager *FdoSelectionManager::manager()
     return s_manager;
 }
 
-X11EmbedPainter *FdoSelectionManager::painter()
+void FdoSelectionManager::addDamageWatch(WId client)
 {
-    return s_painter;
-}
+    d->m_winId = client;
+    qDebug() << "adding damage watch";
+    xcb_connection_t *c = QX11Info::connection();
+    
+    const auto attribsCookie = xcb_get_window_attributes_unchecked(c, client);
 
-void FdoSelectionManager::addDamageWatch(QWidget *container, WId client)
-{
-#if defined(HAVE_XFIXES) && defined(HAVE_XDAMAGE) && defined(HAVE_XCOMPOSITE)
-    DamageWatch *damage = new DamageWatch;
-    damage->container = container;
-    damage->damage = XDamageCreate(QX11Info::display(), client, XDamageReportNonEmpty);
-    damageWatches.insert(client, damage);
-#endif
-}
+    d->m_damage = xcb_generate_id(c);
+    xcb_damage_create(c, d->m_damage, client, XCB_DAMAGE_REPORT_LEVEL_NON_EMPTY);
 
-void FdoSelectionManager::removeDamageWatch(QWidget *container)
-{
-#if defined(HAVE_XFIXES) && defined(HAVE_XDAMAGE) && defined(HAVE_XCOMPOSITE)
-    for (QMap<WId, DamageWatch*>::Iterator it = damageWatches.begin(); it != damageWatches.end(); ++it)
-    {
-        DamageWatch *damage = *(it);
-        if (damage->container == container) {
-             XDamageDestroy(QX11Info::display(), damage->damage);
-             damageWatches.erase(it);
-             delete damage;
-             break;
-        } 
+    QScopedPointer<xcb_get_window_attributes_reply_t, QScopedPointerPodDeleter> attr(xcb_get_window_attributes_reply(c, attribsCookie, Q_NULLPTR));
+    uint32_t events = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+    if (!attr.isNull()) {
+        events = events | attr->your_event_mask;
     }
-#endif
+    // the event mask will not be removed again. We cannot track whether another component also needs STRUCTURE_NOTIFY (e.g. KWindowSystem).
+    // if we would remove the event mask again, other areas will break.
+    xcb_change_window_attributes(c, client, XCB_CW_EVENT_MASK, &events);
 }
+
 
 
 bool FdoSelectionManager::haveComposite() const
@@ -243,38 +242,44 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
         xcb_generic_event_t* ev = static_cast<xcb_generic_event_t *>(message);
         if (XCB_EVENT_RESPONSE_TYPE(ev) == XCB_CLIENT_MESSAGE) {
             auto ce = reinterpret_cast<xcb_client_message_event_t *>(ev);
-            qDebug() << "client message";
             if (ce->type == d->opcodeAtom) {
-                qDebug() << "YAY";
-                return true;
+                switch (ce->data.data32[1]) {
+                    case SYSTEM_TRAY_REQUEST_DOCK:
+                        d->handleRequestDock(ce->data.data32[2]);
+                        return true;
+                }
             }
         }
+        if (XCB_EVENT_RESPONSE_TYPE(ev) == d->damageEventBase + XCB_DAMAGE_NOTIFY) { //&& WID
+                qDebug() << "DAMAGED";
+                xcb_damage_subtract(QX11Info::connection(), d->m_damage, XCB_NONE, XCB_NONE);
+//             if (reinterpret_cast<xcb_damage_notify_event_t *>(event)->drawable == m_winId) {
+//                 update();
+//             }
+                
+                xcb_connection_t *c = QX11Info::connection();
+                
+                xcb_composite_redirect_window(c, d->m_winId, XCB_COMPOSITE_REDIRECT_AUTOMATIC);
+
+                xcb_pixmap_t pix = xcb_generate_id(c);
+                auto cookie = xcb_composite_name_window_pixmap_checked(c, d->m_winId, pix);
+                QScopedPointer<xcb_generic_error_t, QScopedPointerPodDeleter> error(xcb_request_check(c, cookie));
+                if (error) {
+                    qDebug() << "err";
+                } else {
+                    auto geometryCookie = xcb_get_geometry_unchecked(c, pix);
+                    QScopedPointer<xcb_get_geometry_reply_t, QScopedPointerPodDeleter> geo(xcb_get_geometry_reply(c, geometryCookie, Q_NULLPTR));
+                    QSize size;
+                    if (!geo.isNull()) {
+                        size.setWidth(geo->width);
+                        size.setHeight(geo->height);
+                    }
+                    qDebug() << size;
+                }
+                
+
+        }
     }
-
-    
-//     int ret = 0;
-//     xcb_get_geometry_cookie_t geom_c;
-//     xcb_get_geometry_reply_t *geom_r;
-
-//     switch(ev->data.data32[1])
-//     {
-//       case SYSTEM_TRAY_REQUEST_DOCK:
-//         geom_c = xcb_get_geometry_unchecked(QX11Info::connection(), ev->window);
-// 
-//         if(!(geom_r = xcb_get_geometry_reply(QX11Info::connection(), geom_c, NULL)))
-//             return -1;
-// 
-//         if(globalconf.screen->root == geom_r->root)
-//             ret = systray_request_handle(ev->data.data32[2], NULL);
-// 
-//         p_delete(&geom_r);
-//         break;
-//     }
-// 
-//     return ret;
-// }
-    
-    
     return false;
 }
 
@@ -305,9 +310,6 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
 
 void FdoSelectionManager::initSelection()
 {
-    if (!s_painter) {
-//         s_painter = new X11EmbedPainter;
-    }
     s_manager = this;
     
     xcb_client_message_event_t ev;
@@ -390,12 +392,13 @@ void FdoSelectionManager::initSelection()
 // }
 
 
-void FdoSelectionManagerPrivate::handleRequestDock(xcb_window_t wid, void*)
-{
-//     const WId winId = (WId)event.data.l[2];
-    
+void FdoSelectionManagerPrivate::handleRequestDock(xcb_window_t winId)
+{    
     qDebug() << "DOCK REQUESTED!";
-
+    new SNIProxy(winId); //LEAK
+    
+    q->addDamageWatch(winId);
+ 
 //     if (tasks.contains(winId)) {
 //         qDebug() << "got a dock request from an already existing task";
 //         return;

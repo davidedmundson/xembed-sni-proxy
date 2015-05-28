@@ -27,6 +27,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <QX11Info>
 
+/** XEMBED messages */
+#define XEMBED_EMBEDDED_NOTIFY          0
+#define XEMBED_WINDOW_ACTIVATE          1
+#define XEMBED_WINDOW_DEACTIVATE        2
+#define XEMBED_REQUEST_FOCUS            3
+#define XEMBED_FOCUS_IN                 4
+#define XEMBED_FOCUS_OUT                5
+#define XEMBED_FOCUS_NEXT               6
+#define XEMBED_FOCUS_PREV               7
+
+
 namespace Xcb {
 
 typedef xcb_window_t WindowId;
@@ -87,6 +98,19 @@ private:
     xcb_atom_t m_atom;
     QByteArray m_name;
 };
+
+class Atoms {
+public:
+    Atoms() :
+        _XEMBED("_XEMBED")
+    {}
+
+//     Atom _XEMBED_INFO;
+//     Atom _NET_SYSTEM_TRAY_OPCODE;
+    Atom _XEMBED;   
+};
+
+extern Atoms* atoms;
 
 } // namespace Xcb
 

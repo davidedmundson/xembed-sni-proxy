@@ -31,6 +31,12 @@ include(KDECompilerSettings)
 include(ECMInstallIcons)
 include(ECMOptionalAddSubdirectory)
 
+# required frameworks by Core
+find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
+    Notifications
+    WindowSystem
+)
+
 # All the required XCB components
 #I probably don't need /all/ of these. Delete later
 find_package(XCB
@@ -56,6 +62,7 @@ add_definitions(-Wall -std=c++11)
 set(HELPER_SOURCES
     main.cpp
     fdoselectionmanager.cpp
+    sniproxy.cpp
 )
 
 add_executable(davetray ${HELPER_SOURCES})
@@ -74,7 +81,15 @@ set(kwin_XCB_LIBS
     XCB::GLX
     XCB::UTIL
 )
+
 set_package_properties(XCB PROPERTIES TYPE REQUIRED)
 
-target_link_libraries(davetray Qt5::Core Qt5::Widgets Qt5::X11Extras ${kwin_XCB_LIBS})
+target_link_libraries(davetray
+    Qt5::Core
+    Qt5::Widgets
+    Qt5::X11Extras
+    KF5::Notifications
+    KF5::WindowSystem
+    ${kwin_XCB_LIBS}
+)
 

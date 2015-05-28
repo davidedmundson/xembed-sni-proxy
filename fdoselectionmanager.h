@@ -41,8 +41,8 @@ public:
     FdoSelectionManager();
     ~FdoSelectionManager();
 
-    void addDamageWatch(QWidget *container, WId client);
-    void removeDamageWatch(QWidget *container);
+    void addDamageWatch(WId client);
+//     void removeDamageWatch(QWidget *container);
     bool haveComposite() const;
 
 signals:
