@@ -34,7 +34,111 @@
 #include <QGuiApplication>
 #include <QTimer>
 
-#include <kstatusnotifieritem.h>
+#include "statusnotifieritemadaptor.h"
+#include "statusnotifierwatcher_interface.h"
+
+static const char s_statusNotifierWatcherServiceName[] = "org.kde.StatusNotifierWatcher";
+
+// __inline int toInt(WId wid)
+// {
+//     return (int)wid;
+// }
+
+// Marshall the ImageStruct data into a D-BUS argument
+const QDBusArgument &operator<<(QDBusArgument &argument, const KDbusImageStruct &icon)
+{
+    argument.beginStructure();
+    argument << icon.width;
+    argument << icon.height;
+    argument << icon.data;
+    argument.endStructure();
+    return argument;
+}
+
+// Retrieve the ImageStruct data from the D-BUS argument
+const QDBusArgument &operator>>(const QDBusArgument &argument, KDbusImageStruct &icon)
+{
+    qint32 width;
+    qint32 height;
+    QByteArray data;
+
+    argument.beginStructure();
+    argument >> width;
+    argument >> height;
+    argument >> data;
+    argument.endStructure();
+
+    icon.width = width;
+    icon.height = height;
+    icon.data = data;
+
+    return argument;
+}
+
+// Marshall the ImageVector data into a D-BUS argument
+const QDBusArgument &operator<<(QDBusArgument &argument, const KDbusImageVector &iconVector)
+{
+    argument.beginArray(qMetaTypeId<KDbusImageStruct>());
+    for (int i = 0; i < iconVector.size(); ++i) {
+        argument << iconVector[i];
+    }
+    argument.endArray();
+    return argument;
+}
+
+// Retrieve the ImageVector data from the D-BUS argument
+const QDBusArgument &operator>>(const QDBusArgument &argument, KDbusImageVector &iconVector)
+{
+    argument.beginArray();
+    iconVector.clear();
+
+    while (!argument.atEnd()) {
+        KDbusImageStruct element;
+        argument >> element;
+        iconVector.append(element);
+    }
+
+    argument.endArray();
+
+    return argument;
+}
+
+// Marshall the ToolTipStruct data into a D-BUS argument
+const QDBusArgument &operator<<(QDBusArgument &argument, const KDbusToolTipStruct &toolTip)
+{
+    argument.beginStructure();
+    argument << toolTip.icon;
+    argument << toolTip.image;
+    argument << toolTip.title;
+    argument << toolTip.subTitle;
+    argument.endStructure();
+    return argument;
+}
+
+// Retrieve the ToolTipStruct data from the D-BUS argument
+const QDBusArgument &operator>>(const QDBusArgument &argument, KDbusToolTipStruct &toolTip)
+{
+    QString icon;
+    KDbusImageVector image;
+    QString title;
+    QString subTitle;
+
+    argument.beginStructure();
+    argument >> icon;
+    argument >> image;
+    argument >> title;
+    argument >> subTitle;
+    argument.endStructure();
+
+    toolTip.icon = icon;
+    toolTip.image = image;
+    toolTip.title = title;
+    toolTip.subTitle = subTitle;
+
+    return argument;
+}
+
+int SNIProxy::s_serviceCount = 0;
 
 void
 xembed_message_send(xcb_window_t towin,
@@ -54,20 +158,29 @@ xembed_message_send(xcb_window_t towin,
     xcb_send_event(QX11Info::connection(), false, towin, XCB_EVENT_MASK_NO_EVENT, (char *) &ev);
 }
 
-
 SNIProxy::SNIProxy(WId wid, QObject* parent):
     QObject(parent),
     m_windowId(wid),
-    m_sni(new KStatusNotifierItem(this))
+    m_service(QString("org.kde.StatusNotifierItem-%1-%2")
+        .arg(QCoreApplication::applicationPid())
+        .arg(++s_serviceCount)),
+    m_dbus(QDBusConnection::sessionBus())
 {
-    m_sni->setStatus(KStatusNotifierItem::Active);
-    m_sni->setStandardActionsEnabled(false);
 
-    connect(m_sni, SIGNAL(activateRequested(bool,QPoint)), this, SLOT(onActivateRequested(bool,QPoint)));
-    connect(m_sni, SIGNAL(scrollRequested(int,Qt::Orientation)), this, SLOT(onScrollRequested(int,Qt::Orientation)));
-    connect(m_sni, SIGNAL(secondaryActivateRequested(QPoint)), this, SLOT(onSecondaryActivateRequested(QPoint)));
-    //TODO KStatusNotifierItem doesn't pass "contextMenu requested" which exists in the SNI spec if no context menu object is provided
-    //may have to go lower level SNI DBus
+    //TODO only do once
+    qDBusRegisterMetaType<KDbusImageStruct>();
+    qDBusRegisterMetaType<KDbusImageVector>();
+    qDBusRegisterMetaType<KDbusToolTipStruct>();
+
+    //create new SNI
+    new StatusNotifierItemAdaptor(this);
+    qDebug() << "service is" << m_service;
+    m_dbus.registerService(m_service);
+    m_dbus.registerObject("/StatusNotifierItem", this);
+
+    auto statusNotifierWatcher = new org::kde::StatusNotifierWatcher(s_statusNotifierWatcherServiceName, "/StatusNotifierWatcher", QDBusConnection::sessionBus());
+    statusNotifierWatcher->RegisterStatusNotifierItem(m_service);
+    //LEAK
 
     auto window = new QWidget;
     window->show();
@@ -109,6 +222,13 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     update();
 }
 
+SNIProxy::~SNIProxy()
+{
+    m_dbus.unregisterObject("/StatusNotifierItem");
+    m_dbus.unregisterService(m_service);
+    m_dbus.disconnectFromBus(m_service);
+}
+
 void SNIProxy::update()
 {
     realUpdate();
@@ -119,12 +239,51 @@ void SNIProxy::update()
 void SNIProxy::realUpdate()
 {
     QPixmap image = qApp->primaryScreen()->grabWindow(m_windowId);
-    m_sni->setIconByPixmap(image);
+    m_pixmap = image;
+    emit NewIcon();
 }
 
+//____________properties__________
 
+QString SNIProxy::Category() const
+{
+    return "ApplicationStatus";
+}
 
-void SNIProxy::onActivateRequested(bool active, const QPoint& pos)
+QString SNIProxy::Id() const
+{
+    return QString::number(m_windowId); //TODO
+}
+
+KDbusImageVector SNIProxy::IconPixmap() const
+{
+    KDbusImageStruct dbusImage = imageToStruct(m_pixmap.toImage());
+    return KDbusImageVector() << dbusImage;
+}
+
+bool SNIProxy::ItemIsMenu() const
+{
+    return false;
+}
+
+QString SNIProxy::Status() const
+{
+    return "Active";
+}
+
+QString SNIProxy::Title() const
+{
+    return "title"; //KWinInfo on windowId
+}
+
+int SNIProxy::WindowId() const
+{
+    return m_windowId;
+}
+
+//____________actions_____________
+
+void SNIProxy::Activate(int x, int y)
 {
     qDebug() << "activate requested";
 
@@ -165,13 +324,41 @@ void SNIProxy::onActivateRequested(bool active, const QPoint& pos)
     }
 }
 
-void SNIProxy::onScrollRequested(int delta, Qt::Orientation orientation)
+void SNIProxy::ContextMenu(int x, int y)
 {
-    qDebug() << "scroll requested";
+    qDebug() << "Context menu" << x << y;
 }
 
-void SNIProxy::onSecondaryActivateRequested(const QPoint& pos)
+void SNIProxy::SecondaryActivate(int x, int y)
 {
-    qDebug() << "secondary activate adsfasdflkj2";
+
 }
 
+void SNIProxy::Scroll(int delta, const QString& orientation)
+{
+
+}
+
+KDbusImageStruct SNIProxy::imageToStruct(const QImage &image) const
+{
+    KDbusImageStruct icon;
+    icon.width = image.size().width();
+    icon.height = image.size().height();
+    if (image.format() == QImage::Format_ARGB32) {
+        icon.data = QByteArray((char *)image.bits(), image.byteCount());
+    } else {
+        QImage image32 = image.convertToFormat(QImage::Format_ARGB32);
+        icon.data = QByteArray((char *)image32.bits(), image32.byteCount());
+    }
+
+    //swap to network byte order if we are little endian
+    if (QSysInfo::ByteOrder == QSysInfo::LittleEndian) {
+        quint32 *uintBuf = (quint32 *) icon.data.data();
+        for (uint i = 0; i < icon.data.size() / sizeof(quint32); ++i) {
+            *uintBuf = qToBigEndian(*uintBuf);
+            ++uintBuf;
+        }
+    }
+
+    return icon;
+}

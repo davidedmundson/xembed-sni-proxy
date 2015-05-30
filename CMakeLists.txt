@@ -65,6 +65,12 @@ set(HELPER_SOURCES
     sniproxy.cpp
 )
 
+qt5_add_dbus_adaptor(HELPER_SOURCES org.kde.StatusNotifierItem.xml
+                     sniproxy.h SNIProxy)
+
+set(statusnotifierwatcher_xml org.kde.StatusNotifierWatcher.xml)
+qt5_add_dbus_interface(HELPER_SOURCES ${statusnotifierwatcher_xml} statusnotifierwatcher_interface)
+
 add_executable(davetray ${HELPER_SOURCES})
 
 set(kwin_XCB_LIBS
@@ -88,7 +94,7 @@ target_link_libraries(davetray
     Qt5::Core
     Qt5::Widgets
     Qt5::X11Extras
-    KF5::Notifications
+    Qt5::DBus
     KF5::WindowSystem
     ${kwin_XCB_LIBS}
 )
