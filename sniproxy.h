@@ -28,21 +28,7 @@
 #include <QDBusObjectPath>
 #include <QPixmap>
 
-//Custom message type for DBus
-struct KDbusImageStruct {
-    int width;
-    int height;
-    QByteArray data;
-};
-
-typedef QVector<KDbusImageStruct> KDbusImageVector;
-
-struct KDbusToolTipStruct {
-    QString icon;
-    KDbusImageVector image;
-    QString title;
-    QString subTitle;
-};
+#include "snidbus.h"
 
 class SNIProxy : public QObject
 {
@@ -178,20 +164,5 @@ private:
     static int s_serviceCount;
     QPixmap m_pixmap;
 };
-
-const QDBusArgument &operator<<(QDBusArgument &argument, const KDbusImageStruct &icon);
-const QDBusArgument &operator>>(const QDBusArgument &argument, KDbusImageStruct &icon);
-
-Q_DECLARE_METATYPE(KDbusImageStruct)
-
-const QDBusArgument &operator<<(QDBusArgument &argument, const KDbusImageVector &iconVector);
-const QDBusArgument &operator>>(const QDBusArgument &argument, KDbusImageVector &iconVector);
-
-Q_DECLARE_METATYPE(KDbusImageVector)
-
-const QDBusArgument &operator<<(QDBusArgument &argument, const KDbusToolTipStruct &toolTip);
-const QDBusArgument &operator>>(const QDBusArgument &argument, KDbusToolTipStruct &toolTip);
-
-Q_DECLARE_METATYPE(KDbusToolTipStruct)
 
 #endif // SNIPROXY_H

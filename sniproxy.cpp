@@ -44,99 +44,7 @@ static const char s_statusNotifierWatcherServiceName[] = "org.kde.StatusNotifier
 //     return (int)wid;
 // }
 
-// Marshall the ImageStruct data into a D-BUS argument
-const QDBusArgument &operator<<(QDBusArgument &argument, const KDbusImageStruct &icon)
-{
-    argument.beginStructure();
-    argument << icon.width;
-    argument << icon.height;
-    argument << icon.data;
-    argument.endStructure();
-    return argument;
-}
 
-// Retrieve the ImageStruct data from the D-BUS argument
-const QDBusArgument &operator>>(const QDBusArgument &argument, KDbusImageStruct &icon)
-{
-    qint32 width;
-    qint32 height;
-    QByteArray data;
-
-    argument.beginStructure();
-    argument >> width;
-    argument >> height;
-    argument >> data;
-    argument.endStructure();
-
-    icon.width = width;
-    icon.height = height;
-    icon.data = data;
-
-    return argument;
-}
-
-// Marshall the ImageVector data into a D-BUS argument
-const QDBusArgument &operator<<(QDBusArgument &argument, const KDbusImageVector &iconVector)
-{
-    argument.beginArray(qMetaTypeId<KDbusImageStruct>());
-    for (int i = 0; i < iconVector.size(); ++i) {
-        argument << iconVector[i];
-    }
-    argument.endArray();
-    return argument;
-}
-
-// Retrieve the ImageVector data from the D-BUS argument
-const QDBusArgument &operator>>(const QDBusArgument &argument, KDbusImageVector &iconVector)
-{
-    argument.beginArray();
-    iconVector.clear();
-
-    while (!argument.atEnd()) {
-        KDbusImageStruct element;
-        argument >> element;
-        iconVector.append(element);
-    }
-
-    argument.endArray();
-
-    return argument;
-}
-
-// Marshall the ToolTipStruct data into a D-BUS argument
-const QDBusArgument &operator<<(QDBusArgument &argument, const KDbusToolTipStruct &toolTip)
-{
-    argument.beginStructure();
-    argument << toolTip.icon;
-    argument << toolTip.image;
-    argument << toolTip.title;
-    argument << toolTip.subTitle;
-    argument.endStructure();
-    return argument;
-}
-
-// Retrieve the ToolTipStruct data from the D-BUS argument
-const QDBusArgument &operator>>(const QDBusArgument &argument, KDbusToolTipStruct &toolTip)
-{
-    QString icon;
-    KDbusImageVector image;
-    QString title;
-    QString subTitle;
-
-    argument.beginStructure();
-    argument >> icon;
-    argument >> image;
-    argument >> title;
-    argument >> subTitle;
-    argument.endStructure();
-
-    toolTip.icon = icon;
-    toolTip.image = image;
-    toolTip.title = title;
-    toolTip.subTitle = subTitle;
-
-    return argument;
-}
 
 int SNIProxy::s_serviceCount = 0;
 
@@ -166,7 +74,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
         .arg(++s_serviceCount)),
     m_dbus(QDBusConnection::sessionBus())
 {
-
     //TODO only do once
     qDBusRegisterMetaType<KDbusImageStruct>();
     qDBusRegisterMetaType<KDbusImageVector>();
@@ -257,7 +164,7 @@ QString SNIProxy::Id() const
 
 KDbusImageVector SNIProxy::IconPixmap() const
 {
-    KDbusImageStruct dbusImage = imageToStruct(m_pixmap.toImage());
+    KDbusImageStruct dbusImage(m_pixmap.toImage());
     return KDbusImageVector() << dbusImage;
 }
 
@@ -347,26 +254,4 @@ void SNIProxy::mouseClick(bool right, int x, int y)
 }
 
 
-KDbusImageStruct SNIProxy::imageToStruct(const QImage &image) const
-{
-    KDbusImageStruct icon;
-    icon.width = image.size().width();
-    icon.height = image.size().height();
-    if (image.format() == QImage::Format_ARGB32) {
-        icon.data = QByteArray((char *)image.bits(), image.byteCount());
-    } else {
-        QImage image32 = image.convertToFormat(QImage::Format_ARGB32);
-        icon.data = QByteArray((char *)image32.bits(), image32.byteCount());
-    }
-
-    //swap to network byte order if we are little endian
-    if (QSysInfo::ByteOrder == QSysInfo::LittleEndian) {
-        quint32 *uintBuf = (quint32 *) icon.data.data();
-        for (uint i = 0; i < icon.data.size() / sizeof(quint32); ++i) {
-            *uintBuf = qToBigEndian(*uintBuf);
-            ++uintBuf;
-        }
-    }
-
-    return icon;
-}
+//
