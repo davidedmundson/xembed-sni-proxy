@@ -155,9 +155,6 @@ private Q_SLOTS:
     void realUpdate();
 
 private:
-    KDbusImageStruct imageToStruct(const QImage &image) const;
-    void mouseClick(bool right, int x, int y); //FIXME terrible API
-
     QString m_service;
     QDBusConnection m_dbus;
     WId m_windowId;

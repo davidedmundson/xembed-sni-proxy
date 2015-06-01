@@ -29,7 +29,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xcb/xcb_event.h>
 #include <xcb/damage.h>
 
-
+#include <QScopedPointer>
+#include <QVector>
 #include <QX11Info>
 
 /** XEMBED messages */
@@ -48,6 +49,19 @@ namespace Xcb {
 typedef xcb_window_t WindowId;
 
 template <typename T> using ScopedCPointer = QScopedPointer<T, QScopedPointerPodDeleter>;
+
+class XCBEventDispatcher
+{
+public:
+    static XCBEventDispatcher* instance();
+    void flush(xcb_timestamp_t timestamp);
+    void mouseClick(WindowId windowId, bool right, int x, int y); //FIXME terrible API
+
+private:
+//     XCBEventDispatcher();
+    QVector<xcb_generic_event_t*> m_pendingEvents;
+};
+
 
 class Atom
 {
@@ -115,7 +129,7 @@ public:
     Atom selectionAtom;
     Atom opcodeAtom;
     Atom xembedAtom;
-    
+
 };
 
 extern Atoms* atoms;

@@ -68,10 +68,10 @@ public:
 
     uint8_t damageEventBase;
     u_int32_t m_damage;
-    
+
     QHash<WId, u_int32_t> m_damageWatches;
     QHash<WId, SNIProxy*> m_proxies;
-    
+
 //     QHash<WId, MessageRequest> messageRequests;
 //     QHash<WId, FdoTask*> tasks;
 
@@ -82,7 +82,7 @@ FdoSelectionManager::FdoSelectionManager()
     : d(new FdoSelectionManagerPrivate(this))
 {
     initSelection();
-        
+
     //load damage extension
     xcb_connection_t *c = QX11Info::connection();
     xcb_prefetch_extension_data(c, &xcb_damage_id);
@@ -100,7 +100,7 @@ FdoSelectionManager::~FdoSelectionManager()
 
 void FdoSelectionManager::addDamageWatch(WId client)
 {
-    xcb_connection_t *c = QX11Info::connection();    
+    xcb_connection_t *c = QX11Info::connection();
     const auto attribsCookie = xcb_get_window_attributes_unchecked(c, client);
 
     auto damageId = xcb_generate_id(c);
@@ -121,7 +121,9 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
 {
     if (eventType == "xcb_generic_event_t") {
         xcb_generic_event_t* ev = static_cast<xcb_generic_event_t *>(message);
-        if (XCB_EVENT_RESPONSE_TYPE(ev) == XCB_CLIENT_MESSAGE) {
+
+        auto responseType = XCB_EVENT_RESPONSE_TYPE(ev);
+        if (responseType == XCB_CLIENT_MESSAGE) {
             auto ce = reinterpret_cast<xcb_client_message_event_t *>(ev);
             if (ce->type == Xcb::atoms->opcodeAtom) {
                 switch (ce->data.data32[1]) {
@@ -131,15 +133,17 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
                 }
             }
         }
-        
-        if (XCB_EVENT_RESPONSE_TYPE(ev) == d->damageEventBase + XCB_DAMAGE_NOTIFY) {
-               auto damagedWId = reinterpret_cast<xcb_damage_notify_event_t *>(ev)->drawable;
-//             if () {
-//             } 
-               auto sniProx = d->m_proxies[damagedWId];
-               Q_ASSERT(sniProx);
-               sniProx->update();
-               xcb_damage_subtract(QX11Info::connection(), d->m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
+        else if (responseType == d->damageEventBase + XCB_DAMAGE_NOTIFY) {
+            auto damagedWId = reinterpret_cast<xcb_damage_notify_event_t *>(ev)->drawable;
+            auto sniProx = d->m_proxies[damagedWId];
+            Q_ASSERT(sniProx);
+            sniProx->update();
+            xcb_damage_subtract(QX11Info::connection(), d->m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
+        }
+        else  if (responseType == XCB_PROPERTY_NOTIFY) {
+            qDebug() << "prop notify";
+            xcb_property_notify_event_t *pe = reinterpret_cast<xcb_property_notify_event_t *>(ev);
+            Xcb::XCBEventDispatcher::instance()->flush(pe->time);
         }
     }
     return false;
@@ -148,10 +152,10 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
 void FdoSelectionManager::initSelection()
 {
     s_manager = this;
-    
+
     xcb_client_message_event_t ev;
 
-    auto cookie = xcb_intern_atom(QX11Info::connection(), false, strlen("MANAGER"), "MANAGER");    
+    auto cookie = xcb_intern_atom(QX11Info::connection(), false, strlen("MANAGER"), "MANAGER");
     ev.response_type = XCB_CLIENT_MESSAGE;
     ev.window = QX11Info::appRootWindow();
     ev.format = 32;
@@ -168,20 +172,20 @@ void FdoSelectionManager::initSelection()
                             XCB_CURRENT_TIME);
 
     xcb_send_event(QX11Info::connection(), false, QX11Info::appRootWindow(), 0xFFFFFF, (char *) &ev);
-    
+
     qApp->installNativeEventFilter(this);
 }
 
 void FdoSelectionManagerPrivate::handleRequestDock(xcb_window_t winId)
-{    
+{
     qDebug() << "DOCK REQUESTED!";
 //     if (tasks.contains(winId)) {
 //         qDebug() << "got a dock request from an already existing task";
 //         return;
 //     }
 
-    m_proxies[winId] = new SNIProxy(winId); 
-    
+    m_proxies[winId] = new SNIProxy(winId);
+
     q->addDamageWatch(winId);
  //     emit q->taskCreated(task);
 

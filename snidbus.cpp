@@ -30,7 +30,6 @@
 
 KDbusImageStruct::KDbusImageStruct()
 {
-
 }
 
 KDbusImageStruct::KDbusImageStruct(const QImage &image)
