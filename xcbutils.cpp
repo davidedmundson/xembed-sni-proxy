@@ -61,7 +61,7 @@ void XCBEventDispatcher::mouseClick(WindowId windowId, bool right, int x, int y)
         event->event_x = 5;
         event->event_y = 5;
         event->child = windowId;
-        event->state = click;
+        event->state = 0;
         m_pendingEvents.append(reinterpret_cast<xcb_generic_event_t*>(event));
     }
 
