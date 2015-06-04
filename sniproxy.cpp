@@ -100,13 +100,22 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
             | XCB_EVENT_MASK_ENTER_WINDOW
     };
 
-    //set a background (ideally I want this transparent)
-    const uint32_t backgroundPixel[4] = {0,0,0,0};
+
+        //set a background (ideally I want this transparent)
+    const uint32_t backgroundPixel[4] = {255,255,255,255};
     xcb_change_window_attributes(QX11Info::connection(), wid, XCB_CW_BACK_PIXEL,
                                  backgroundPixel);
 
-    xcb_change_window_attributes(QX11Info::connection(), wid, XCB_CW_EVENT_MASK,
-                                 select_input_val);
+    xcb_change_window_attributes(QX11Info::connection(), wid, XCB_CW_BACKING_PIXEL,
+                                 backgroundPixel);
+
+    xcb_change_window_attributes(QX11Info::connection(), wid, XCB_CW_BORDER_PIXEL,
+                                 backgroundPixel);
+
+    xcb_clear_area(QX11Info::connection(), 0 , m_windowId, 0,0, 48, 48);
+
+//     xcb_change_window_attributes(QX11Info::connection(), wid, XCB_CW_EVENT_MASK,
+//                                  select_input_val);
 
     /* we grab the window, but also make sure it's automatically reparented back
      * to the root window if we should die.
@@ -126,6 +135,10 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              config_vals);
 
+
+
+    xcb_clear_area(QX11Info::connection(), 0 , m_windowId, 0,0, 0, 0);
+
     update();
 }
 
@@ -138,15 +151,32 @@ SNIProxy::~SNIProxy()
 
 void SNIProxy::update()
 {
-    realUpdate();
-    //bodge to remove
-    QTimer::singleShot(100, this, SLOT(realUpdate()));
-}
+    //get pixmap (xcb_drawable)
+    auto getImageCookie = xcb_get_image(QX11Info::connection(), XCB_IMAGE_FORMAT_Z_PIXMAP, m_windowId, 0, 0, 48, 48, 0xFFFFFF);
 
-void SNIProxy::realUpdate()
-{
-    QPixmap image = qApp->primaryScreen()->grabWindow(m_windowId);
-    m_pixmap = image;
+    //get image from that
+    auto reply = xcb_get_image_reply(QX11Info::connection(), getImageCookie, Q_NULLPTR);
+    if (!reply) {
+        qDebug() << "no reply :(";
+        return;
+    }
+    qDebug() << "reply: " <<reply->length << reply->depth << reply->visual;
+
+    auto t = xcb_get_image_data(reply);
+    for (int i=0; i<xcb_get_image_data_length(reply);i++)
+    {
+//         qDebug() << t[i];
+    }
+    qDebug() << xcb_get_image_data_length(reply) ;
+
+    QImage image(xcb_get_image_data(reply), 48, 48, 48*4, QImage::Format_ARGB32);
+    qDebug() << image.isNull() << image.width();
+    image.save("/tmp/foo.png");
+    //turn that into something usable
+
+    //FIXME reply leaks
+
+    m_pixmap = QPixmap::fromImage(image);
     emit NewIcon();
 }
 

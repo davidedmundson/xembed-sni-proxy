@@ -151,9 +151,6 @@ Q_SIGNALS:
      */
     void NewStatus(const QString &status);
 
-private Q_SLOTS:
-    void realUpdate();
-
 private:
     QString m_service;
     QDBusConnection m_dbus;
