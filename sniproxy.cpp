@@ -100,6 +100,9 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
             | XCB_EVENT_MASK_ENTER_WINDOW
     };
 
+
+    //MARTIN - SET FORMAT ON WINDOW
+
     //set a background (ideally I want this transparent)
     const uint32_t backgroundPixel[4] = {0,0,0,0};
     xcb_change_window_attributes(QX11Info::connection(), wid, XCB_CW_BACK_PIXEL,

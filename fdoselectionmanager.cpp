@@ -140,11 +140,6 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
             sniProx->update();
             xcb_damage_subtract(QX11Info::connection(), d->m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
         }
-        else  if (responseType == XCB_PROPERTY_NOTIFY) {
-            qDebug() << "prop notify";
-            xcb_property_notify_event_t *pe = reinterpret_cast<xcb_property_notify_event_t *>(ev);
-            Xcb::XCBEventDispatcher::instance()->flush(pe->time);
-        }
     }
     return false;
 }

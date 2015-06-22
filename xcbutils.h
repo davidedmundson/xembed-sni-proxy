@@ -54,12 +54,9 @@ class XCBEventDispatcher
 {
 public:
     static XCBEventDispatcher* instance();
-    void flush(xcb_timestamp_t timestamp);
     void mouseClick(WindowId windowId, bool right, int x, int y); //FIXME terrible API
 
 private:
-//     XCBEventDispatcher();
-    QVector<xcb_generic_event_t*> m_pendingEvents;
 };
 
 
