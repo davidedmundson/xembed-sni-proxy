@@ -89,7 +89,9 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     statusNotifierWatcher->RegisterStatusNotifierItem(m_service);
     //LEAK
 
-    auto window = new QWidget;
+    auto window = new QWindow;
+//     QSurfaceFormat format;
+//     format.setAlphaBufferSize(8);
     window->show();
 
     xcb_get_property_cookie_t em_cookie;
