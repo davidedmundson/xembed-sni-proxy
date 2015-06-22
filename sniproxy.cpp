@@ -102,9 +102,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
             | XCB_EVENT_MASK_ENTER_WINDOW
     };
 
-
-    //MARTIN - SET FORMAT ON WINDOW
-
     //set a background (ideally I want this transparent)
     const uint32_t backgroundPixel[4] = {0,0,0,0};
     //This line /literally/ does nothing
@@ -114,6 +111,8 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     //same for this
     xcb_change_window_attributes(QX11Info::connection(), wid, XCB_CW_EVENT_MASK,
                                  select_input_val);
+
+//     xcb_clear_area(QX11Info::connection(), 0 , m_windowId, 0,0, 48, 48);
 
     
     //if our window isn't mapped xdamage doesn't work :(
@@ -138,6 +137,10 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              config_vals);
 
+
+
+    xcb_clear_area(QX11Info::connection(), 0 , m_windowId, 0,0, 0, 0);
+
     update();
 }
 
@@ -150,15 +153,26 @@ SNIProxy::~SNIProxy()
 
 void SNIProxy::update()
 {
-    realUpdate();
-    //bodge to remove
-    QTimer::singleShot(100, this, SLOT(realUpdate()));
-}
+    //get pixmap (xcb_drawable)
+    auto getImageCookie = xcb_get_image(QX11Info::connection(), XCB_IMAGE_FORMAT_Z_PIXMAP, m_windowId, 0, 0, 48, 48, 0xFFFFFF);
 
-void SNIProxy::realUpdate()
-{
-    QPixmap image = qApp->primaryScreen()->grabWindow(m_windowId);
-    m_pixmap = image;
+    //get image from that
+    auto reply = xcb_get_image_reply(QX11Info::connection(), getImageCookie, Q_NULLPTR);
+    if (!reply) {
+        qDebug() << "no reply :(";
+        return;
+    }
+
+    auto t = xcb_get_image_data(reply);
+
+    QImage image(xcb_get_image_data(reply), 48, 48, 48*4, QImage::Format_ARGB32);
+    qDebug() << image.isNull() << image.width();
+    image.save("/tmp/foo.png");
+    //turn that into something usable
+
+    //FIXME reply leaks
+
+    m_pixmap = QPixmap::fromImage(image);
     emit NewIcon();
 }
 
