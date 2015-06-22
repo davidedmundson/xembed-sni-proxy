@@ -90,9 +90,9 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     //LEAK
 
     auto window = new QWindow;
-//     QSurfaceFormat format;
-//     format.setAlphaBufferSize(8);
-    window->show();
+    QSurfaceFormat format;
+    format.setAlphaBufferSize(0);
+    window->setFormat(format);
 
     xcb_get_property_cookie_t em_cookie;
     const uint32_t select_input_val[] =
@@ -107,12 +107,19 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
     //set a background (ideally I want this transparent)
     const uint32_t backgroundPixel[4] = {0,0,0,0};
+    //This line /literally/ does nothing
     xcb_change_window_attributes(QX11Info::connection(), wid, XCB_CW_BACK_PIXEL,
                                  backgroundPixel);
 
+    //same for this
     xcb_change_window_attributes(QX11Info::connection(), wid, XCB_CW_EVENT_MASK,
                                  select_input_val);
 
+    
+    //if our window isn't mapped xdamage doesn't work :(
+    window->show();
+
+    
     /* we grab the window, but also make sure it's automatically reparented back
      * to the root window if we should die.
     */
