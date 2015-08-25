@@ -141,7 +141,7 @@ void SNIProxy::update()
     //get image from that
     auto reply = xcb_get_image_reply(QX11Info::connection(), getImageCookie, Q_NULLPTR);
     if (!reply) {
-        qDebug() << "no reply :(";
+        qDebug() << "no image fetched from embedded client :(";
         return;
     }
 
