@@ -39,13 +39,6 @@
 
 static const char s_statusNotifierWatcherServiceName[] = "org.kde.StatusNotifierWatcher";
 
-// __inline int toInt(WId wid)
-// {
-//     return (int)wid;
-// }
-
-
-
 int SNIProxy::s_serviceCount = 0;
 
 void
