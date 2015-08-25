@@ -56,27 +56,7 @@
 
 static FdoSelectionManager *s_manager = 0;
 
-class FdoSelectionManagerPrivate
-{
-public:
-    FdoSelectionManagerPrivate(FdoSelectionManager *q)
-        : q(q)
-    {
-    }
-
-    void handleRequestDock(xcb_window_t embed_win);
-
-    uint8_t damageEventBase;
-    u_int32_t m_damage;
-
-    QHash<WId, u_int32_t> m_damageWatches;
-    QHash<WId, SNIProxy*> m_proxies;
-
-    FdoSelectionManager *q;
-};
-
 FdoSelectionManager::FdoSelectionManager()
-    : d(new FdoSelectionManagerPrivate(this))
 {
     initSelection();
 
@@ -84,7 +64,7 @@ FdoSelectionManager::FdoSelectionManager()
     xcb_connection_t *c = QX11Info::connection();
     xcb_prefetch_extension_data(c, &xcb_damage_id);
     const auto *reply = xcb_get_extension_data(c, &xcb_damage_id);
-    d->damageEventBase = reply->first_event;
+    m_damageEventBase = reply->first_event;
     if (reply->present) {
         xcb_damage_query_version_unchecked(c, XCB_DAMAGE_MAJOR_VERSION, XCB_DAMAGE_MINOR_VERSION);
     }
@@ -106,7 +86,7 @@ void FdoSelectionManager::addDamageWatch(WId client)
     const auto attribsCookie = xcb_get_window_attributes_unchecked(c, client);
 
     auto damageId = xcb_generate_id(c);
-    d->m_damageWatches[client] = damageId;
+    m_damageWatches[client] = damageId;
     xcb_damage_create(c, damageId, client, XCB_DAMAGE_REPORT_LEVEL_NON_EMPTY);
 
     QScopedPointer<xcb_get_window_attributes_reply_t, QScopedPointerPodDeleter> attr(xcb_get_window_attributes_reply(c, attribsCookie, Q_NULLPTR));
@@ -130,21 +110,21 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
             if (ce->type == Xcb::atoms->opcodeAtom) {
                 switch (ce->data.data32[1]) {
                     case SYSTEM_TRAY_REQUEST_DOCK:
-                        d->handleRequestDock(ce->data.data32[2]);
+                        dock(ce->data.data32[2]);
                         return true;
                 }
             }
         } else if (responseType == XCB_UNMAP_NOTIFY) {
             auto unmappedWId = reinterpret_cast<xcb_unmap_notify_event_t *>(ev)->window;
-            if (d->m_proxies[unmappedWId]) {
+            if (m_proxies[unmappedWId]) {
                 undock(unmappedWId);
             }
-        } else if (responseType == d->damageEventBase + XCB_DAMAGE_NOTIFY) {
+        } else if (responseType == m_damageEventBase + XCB_DAMAGE_NOTIFY) {
             auto damagedWId = reinterpret_cast<xcb_damage_notify_event_t *>(ev)->drawable;
-            auto sniProx = d->m_proxies[damagedWId];
+            auto sniProx = m_proxies[damagedWId];
             Q_ASSERT(sniProx);
             sniProx->update();
-            xcb_damage_subtract(QX11Info::connection(), d->m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
+            xcb_damage_subtract(QX11Info::connection(), m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
         }
     }
     return false;
@@ -179,28 +159,17 @@ void FdoSelectionManager::initSelection()
     show();
 }
 
-void FdoSelectionManagerPrivate::handleRequestDock(xcb_window_t winId)
+void FdoSelectionManager::dock(xcb_window_t winId)
 {
-    qDebug() << "DOCK REQUESTED!";
-//     if (tasks.contains(winId)) {
-//         qDebug() << "got a dock request from an already existing task";
-//         return;
-//     }
-
-    m_proxies[winId] = new SNIProxy(winId, q);
-
-    qDebug() << "adding window " << winId;
-
-    q->addDamageWatch(winId);
- //     emit q->taskCreated(task);
-
+    qDebug() << "docking";
+    m_proxies[winId] = new SNIProxy(winId, this);
+    addDamageWatch(winId);
 }
 
 void FdoSelectionManager::undock(xcb_window_t winId)
 {
-    d->m_proxies[winId]->deleteLater();
-    d->m_proxies.remove(winId);
-
+    m_proxies[winId]->deleteLater();
+    m_proxies.remove(winId);
     //remove the damage watch? The window's gone so is it needed?
 }
 

@@ -27,7 +27,7 @@
 
 #include <xcb/xcb.h>
 
-class FdoSelectionManagerPrivate;
+class SNIProxy;
 
 class FdoSelectionManager : public QWidget, public QAbstractNativeEventFilter
 {
@@ -39,20 +39,20 @@ public:
     FdoSelectionManager();
     ~FdoSelectionManager();
 
-    void addDamageWatch(WId client);
-
-    void undock(xcb_window_t client);
-
 protected:
     bool nativeEventFilter(const QByteArray & eventType, void * message, long * result) Q_DECL_OVERRIDE;
 
-private slots:
-    void initSelection();
-//     void cleanupTask(WId winId);
-
 private:
-    friend class FdoSelectionManagerPrivate;
-    FdoSelectionManagerPrivate* const d;
+    void initSelection();
+    void addDamageWatch(WId client);
+    void dock(xcb_window_t embed_win);
+    void undock(xcb_window_t client);
+
+    uint8_t m_damageEventBase;
+
+
+    QHash<WId, u_int32_t> m_damageWatches;
+    QHash<WId, SNIProxy*> m_proxies;
 };
 
 
