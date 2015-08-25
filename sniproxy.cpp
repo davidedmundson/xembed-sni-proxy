@@ -72,11 +72,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
         .arg(++s_serviceCount)),
     m_dbus(QDBusConnection::sessionBus())
 {
-    //TODO only do once
-    qDBusRegisterMetaType<KDbusImageStruct>();
-    qDBusRegisterMetaType<KDbusImageVector>();
-    qDBusRegisterMetaType<KDbusToolTipStruct>();
-
     //create new SNI
     new StatusNotifierItemAdaptor(this);
     qDebug() << "service is" << m_service;
