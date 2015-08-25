@@ -78,9 +78,8 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     m_dbus.registerService(m_service);
     m_dbus.registerObject("/StatusNotifierItem", this);
 
-    auto statusNotifierWatcher = new org::kde::StatusNotifierWatcher(s_statusNotifierWatcherServiceName, "/StatusNotifierWatcher", QDBusConnection::sessionBus());
+    auto statusNotifierWatcher = new org::kde::StatusNotifierWatcher(s_statusNotifierWatcherServiceName, "/StatusNotifierWatcher", QDBusConnection::sessionBus(), this);
     statusNotifierWatcher->RegisterStatusNotifierItem(m_service);
-    //LEAK
 
     auto window = new QWindow;
     QSurfaceFormat format;
