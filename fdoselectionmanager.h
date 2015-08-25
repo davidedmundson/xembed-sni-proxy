@@ -25,6 +25,8 @@
 #include <QWidget>
 #include <QAbstractNativeEventFilter>
 
+#include <xcb/xcb.h>
+
 class FdoSelectionManagerPrivate;
 
 class FdoSelectionManager : public QWidget, public QAbstractNativeEventFilter
@@ -38,10 +40,8 @@ public:
     ~FdoSelectionManager();
 
     void addDamageWatch(WId client);
-//     void removeDamageWatch(QWidget *container);
-    
-//        void taskCreated(SystemTray::Task *task);
-//     void notificationCreated(SystemTray::Notification *notification);
+
+    void undock(xcb_window_t client);
 
 protected:
     bool nativeEventFilter(const QByteArray & eventType, void * message, long * result) Q_DECL_OVERRIDE;

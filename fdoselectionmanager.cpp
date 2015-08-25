@@ -72,9 +72,6 @@ public:
     QHash<WId, u_int32_t> m_damageWatches;
     QHash<WId, SNIProxy*> m_proxies;
 
-//     QHash<WId, MessageRequest> messageRequests;
-//     QHash<WId, FdoTask*> tasks;
-
     FdoSelectionManager *q;
 };
 
@@ -137,14 +134,18 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
                         return true;
                 }
             }
-        }
-        else if (responseType == d->damageEventBase + XCB_DAMAGE_NOTIFY) {
+        } else if (responseType == XCB_UNMAP_NOTIFY) {
+            auto unmappedWId = reinterpret_cast<xcb_unmap_notify_event_t *>(ev)->window;
+            if (d->m_proxies[unmappedWId]) {
+                undock(unmappedWId);
+            }
+        } else if (responseType == d->damageEventBase + XCB_DAMAGE_NOTIFY) {
             auto damagedWId = reinterpret_cast<xcb_damage_notify_event_t *>(ev)->drawable;
             auto sniProx = d->m_proxies[damagedWId];
             Q_ASSERT(sniProx);
             sniProx->update();
             xcb_damage_subtract(QX11Info::connection(), d->m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
-        } //else if XCB_DESTROY_NOTIFY
+        }
     }
     return false;
 }
@@ -195,9 +196,12 @@ void FdoSelectionManagerPrivate::handleRequestDock(xcb_window_t winId)
 
 }
 
-// void FdoSelectionManager::cleanupTask(WId winId)
-// {
-//     d->tasks.remove(winId);
-// }
+void FdoSelectionManager::undock(xcb_window_t winId)
+{
+    d->m_proxies[winId]->deleteLater();
+    d->m_proxies.remove(winId);
+
+    //remove the damage watch? The window's gone so is it needed?
+}
 
 
