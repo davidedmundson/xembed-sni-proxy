@@ -110,7 +110,14 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
     //resize window we're embedding
     const int baseSize = 48;
-    const uint32_t config_vals[4] = { 0, 0 , baseSize, baseSize };
+    /*const*/ uint32_t config_vals[4] = { 0, 0 , baseSize, baseSize };
+
+    //set an X and Y for viewing in the debug UI.
+    //so they don't overlap
+    //TODO this is going to run out of space we need to relayout everything in the main view properly
+    config_vals[0] = baseSize * s_serviceCount % 480;
+    config_vals[1] = baseSize * qFloor(s_serviceCount / 10);
+
     auto cookie = xcb_configure_window(c, wid,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              config_vals);
