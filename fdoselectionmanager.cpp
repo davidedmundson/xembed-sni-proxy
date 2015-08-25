@@ -144,7 +144,7 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
             Q_ASSERT(sniProx);
             sniProx->update();
             xcb_damage_subtract(QX11Info::connection(), d->m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
-        }
+        } //else if XCB_DESTROY_NOTIFY
     }
     return false;
 }
