@@ -174,6 +174,8 @@ void FdoSelectionManager::initSelection()
     xcb_send_event(QX11Info::connection(), false, QX11Info::appRootWindow(), 0xFFFFFF, (char *) &ev);
 
     qApp->installNativeEventFilter(this);
+
+    show();
 }
 
 void FdoSelectionManagerPrivate::handleRequestDock(xcb_window_t winId)
@@ -184,7 +186,9 @@ void FdoSelectionManagerPrivate::handleRequestDock(xcb_window_t winId)
 //         return;
 //     }
 
-    m_proxies[winId] = new SNIProxy(winId);
+    m_proxies[winId] = new SNIProxy(winId, q);
+
+    qDebug() << "adding window " << winId;
 
     q->addDamageWatch(winId);
  //     emit q->taskCreated(task);
