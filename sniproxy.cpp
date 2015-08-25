@@ -69,14 +69,10 @@ xembed_message_send(xcb_window_t towin,
 SNIProxy::SNIProxy(WId wid, QObject* parent):
     QObject(parent),
     m_windowId(wid),
-    m_service(QString("org.kde.StatusNotifierItem-%1-%2")
-        .arg(QCoreApplication::applicationPid())
-        .arg(++s_serviceCount)),
-    m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QString("DaveTray%1").arg(s_serviceCount)))
+    m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QString("DaveTray%1").arg(++s_serviceCount)))
     // in order to have 2 SNIs we need to have 2 connections to DBus.. Do not simply use QDbusConnnection::sessionBus here
     //Ideally we should change the spec to pass a Path name along with a service name in RegisterItem as this is silly
 {
-
     //create new SNI
     new StatusNotifierItemAdaptor(this);
     m_dbus.registerObject("/StatusNotifierItem", this);
