@@ -101,32 +101,35 @@ void FdoSelectionManager::addDamageWatch(WId client)
 
 bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* message, long int* result)
 {
-    if (eventType == "xcb_generic_event_t") {
-        xcb_generic_event_t* ev = static_cast<xcb_generic_event_t *>(message);
-
-        auto responseType = XCB_EVENT_RESPONSE_TYPE(ev);
-        if (responseType == XCB_CLIENT_MESSAGE) {
-            auto ce = reinterpret_cast<xcb_client_message_event_t *>(ev);
-            if (ce->type == Xcb::atoms->opcodeAtom) {
-                switch (ce->data.data32[1]) {
-                    case SYSTEM_TRAY_REQUEST_DOCK:
-                        dock(ce->data.data32[2]);
-                        return true;
-                }
-            }
-        } else if (responseType == XCB_UNMAP_NOTIFY) {
-            auto unmappedWId = reinterpret_cast<xcb_unmap_notify_event_t *>(ev)->window;
-            if (m_proxies[unmappedWId]) {
-                undock(unmappedWId);
-            }
-        } else if (responseType == m_damageEventBase + XCB_DAMAGE_NOTIFY) {
-            auto damagedWId = reinterpret_cast<xcb_damage_notify_event_t *>(ev)->drawable;
-            auto sniProx = m_proxies[damagedWId];
-            Q_ASSERT(sniProx);
-            sniProx->update();
-            xcb_damage_subtract(QX11Info::connection(), m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
-        }
+    if (eventType != "xcb_generic_event_t") {
+        return false;
     }
+
+    xcb_generic_event_t* ev = static_cast<xcb_generic_event_t *>(message);
+
+    auto responseType = XCB_EVENT_RESPONSE_TYPE(ev);
+    if (responseType == XCB_CLIENT_MESSAGE) {
+        auto ce = reinterpret_cast<xcb_client_message_event_t *>(ev);
+        if (ce->type == Xcb::atoms->opcodeAtom) {
+            switch (ce->data.data32[1]) {
+                case SYSTEM_TRAY_REQUEST_DOCK:
+                    dock(ce->data.data32[2]);
+                    return true;
+            }
+        }
+    } else if (responseType == XCB_UNMAP_NOTIFY) {
+        auto unmappedWId = reinterpret_cast<xcb_unmap_notify_event_t *>(ev)->window;
+        if (m_proxies[unmappedWId]) {
+            undock(unmappedWId);
+        }
+    } else if (responseType == m_damageEventBase + XCB_DAMAGE_NOTIFY) {
+        auto damagedWId = reinterpret_cast<xcb_damage_notify_event_t *>(ev)->drawable;
+        auto sniProx = m_proxies[damagedWId];
+        Q_ASSERT(sniProx);
+        sniProx->update();
+        xcb_damage_subtract(QX11Info::connection(), m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
+    }
+
     return false;
 }
 
