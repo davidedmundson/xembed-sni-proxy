@@ -152,7 +152,6 @@ Q_SIGNALS:
     void NewStatus(const QString &status);
 
 private:
-    QString m_service;
     QDBusConnection m_dbus;
     WId m_windowId;
     static int s_serviceCount;

@@ -72,16 +72,17 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     m_service(QString("org.kde.StatusNotifierItem-%1-%2")
         .arg(QCoreApplication::applicationPid())
         .arg(++s_serviceCount)),
-    m_dbus(QDBusConnection::sessionBus())
+    m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QString("DaveTray%1").arg(s_serviceCount)))
+    // in order to have 2 SNIs we need to have 2 connections to DBus.. Do not simply use QDbusConnnection::sessionBus here
+    //Ideally we should change the spec to pass a Path name along with a service name in RegisterItem as this is silly
 {
+
     //create new SNI
     new StatusNotifierItemAdaptor(this);
-    qDebug() << "service is" << m_service;
-    m_dbus.registerService(m_service);
     m_dbus.registerObject("/StatusNotifierItem", this);
 
     auto statusNotifierWatcher = new org::kde::StatusNotifierWatcher(s_statusNotifierWatcherServiceName, "/StatusNotifierWatcher", QDBusConnection::sessionBus(), this);
-    statusNotifierWatcher->RegisterStatusNotifierItem(m_service);
+    statusNotifierWatcher->RegisterStatusNotifierItem(m_dbus.baseService());
 
     auto c = QX11Info::connection();
 
@@ -125,9 +126,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
 SNIProxy::~SNIProxy()
 {
-    m_dbus.unregisterObject("/StatusNotifierItem");
-    m_dbus.unregisterService(m_service);
-    m_dbus.disconnectFromBus(m_service);
+    QDBusConnection::disconnectFromBus(m_dbus.name());
 }
 
 void SNIProxy::update()
