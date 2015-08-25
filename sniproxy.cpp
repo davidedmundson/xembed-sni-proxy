@@ -151,9 +151,6 @@ void SNIProxy::update()
     auto t = xcb_get_image_data(reply);
 
     QImage image(xcb_get_image_data(reply), 48, 48, 48*4, QImage::Format_ARGB32);
-    qDebug() << image.isNull() << image.width();
-    image.save("/tmp/foo.png");
-    //turn that into something usable
 
     //FIXME reply leaks
 
