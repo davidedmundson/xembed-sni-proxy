@@ -95,6 +95,11 @@ FdoSelectionManager::FdoSelectionManager()
 
 FdoSelectionManager::~FdoSelectionManager()
 {
+    qDebug() << "unregistering system tray";
+    xcb_set_selection_owner(QX11Info::connection(),
+                            XCB_NONE,
+                            Xcb::atoms->selectionAtom,
+                            XCB_CURRENT_TIME);
 
 }
 
