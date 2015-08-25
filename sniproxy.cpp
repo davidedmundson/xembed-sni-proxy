@@ -34,6 +34,8 @@
 #include <QGuiApplication>
 #include <QTimer>
 
+#include <KWindowSystem>
+
 #include "statusnotifieritemadaptor.h"
 #include "statusnotifierwatcher_interface.h"
 
@@ -183,7 +185,8 @@ QString SNIProxy::Status() const
 
 QString SNIProxy::Title() const
 {
-    return "title"; //KWinInfo on windowId
+    KWindowInfo window (m_windowId, NET::WMName);
+    return window.name();
 }
 
 int SNIProxy::WindowId() const
