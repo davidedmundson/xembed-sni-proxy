@@ -17,8 +17,8 @@ void XCBEventDispatcher::mouseClick(WindowId windowId, bool right, int x, int y)
         event->time = QX11Info::getTimestamp();
         event->same_screen = 1;
         event->root = QX11Info::appRootWindow();
-        event->root_x = 5;
-        event->root_y = 5;
+        event->root_x = x;
+        event->root_y = y;
         event->event_x = 5;
         event->event_y = 5;
         event->child = 0;
@@ -40,8 +40,8 @@ void XCBEventDispatcher::mouseClick(WindowId windowId, bool right, int x, int y)
         event->time = QX11Info::getTimestamp();
         event->same_screen = 1;
         event->root = QX11Info::appRootWindow();
-        event->root_x = 5;
-        event->root_y = 5;
+        event->root_x = x;
+        event->root_y = y;
         event->event_x = 5;
         event->event_y = 5;
         event->child = 0;
