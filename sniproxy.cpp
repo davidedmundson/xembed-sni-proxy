@@ -89,6 +89,8 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
         XCB_EVENT_MASK_STRUCTURE_NOTIFY
             | XCB_EVENT_MASK_PROPERTY_CHANGE
             | XCB_EVENT_MASK_ENTER_WINDOW
+            | XCB_EVENT_MASK_BUTTON_PRESS
+            | XCB_EVENT_MASK_BUTTON_RELEASE
     };
     xcb_change_window_attributes(c, wid, XCB_CW_EVENT_MASK,
                                  select_input_val);
