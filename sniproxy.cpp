@@ -104,7 +104,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     xcb_change_save_set(c, XCB_SET_MODE_INSERT, wid);
 
     //tell client we're embedding it
-    xembed_message_send(wid, XEMBED_EMBEDDED_NOTIFY, 0, parentWinId, 0);
+    xembed_message_send(wid, XEMBED_EMBEDDED_NOTIFY, parentWinId, 0, 0);
 
     //resize window we're embedding
     const int baseSize = 48;
