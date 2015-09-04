@@ -59,12 +59,7 @@ xembed_message_send(xcb_window_t towin,
     ev.data.data32[3] = d2;
     ev.data.data32[4] = d3;
     ev.type = Xcb::atoms->xembedAtom;
-    auto cookie = xcb_send_event(QX11Info::connection(), false, towin, XCB_EVENT_MASK_NO_EVENT, (char *) &ev);
-
-    auto err = xcb_request_check(QX11Info::connection(), cookie);
-    qDebug() << "xembed error " << err;
-
-    xcb_flush(QX11Info::connection());
+    xcb_send_event(QX11Info::connection(), false, towin, XCB_EVENT_MASK_NO_EVENT, (char *) &ev);
 }
 
 SNIProxy::SNIProxy(WId wid, QObject* parent):
@@ -108,7 +103,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
                         parentWinId,
                         0, 0);
 
-    xcb_composite_redirect_window(c, wid, XCB_COMPOSITE_REDIRECT_MANUAL);
+//     xcb_composite_redirect_window(c, wid, XCB_COMPOSITE_REDIRECT_MANUAL);
 
 
     /* we grab the window, but also make sure it's automatically reparented back
@@ -132,7 +127,11 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     //awesome's system trays has a flush here...so we should too
     xcb_flush(c);
 
-    update();
+    //there's no damage event for the first paint, and sometimes it's not drawn immediately
+    //not ideal, but it works better than nothing
+
+    //test with xchat
+    QTimer::singleShot(500, this, &SNIProxy::update);
 }
 
 SNIProxy::~SNIProxy()

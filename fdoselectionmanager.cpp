@@ -159,22 +159,13 @@ void FdoSelectionManager::initSelection()
     xcb_send_event(QX11Info::connection(), false, QX11Info::appRootWindow(), 0xFFFFFF, (char *) &ev);
 
     qApp->installNativeEventFilter(this);
-
-//     show();
-//     move(200, 50);
-
-    //Tell kwin not to render us
-//     xcb_composite_redirect_window(QX11Info::connection(), winId, XCB_COMPOSITE_REDIRECT_MANUAL);
 }
 
 void FdoSelectionManager::dock(xcb_window_t winId)
 {
     qDebug() << "docking";
-
-    //don't render subwindows on the main display
-//     xcb_composite_redirect_subwindows(QX11Info::connection(), FdoSelectionManager::winId(), XCB_COMPOSITE_REDIRECT_MANUAL);
-    m_proxies[winId] = new SNIProxy(winId, this);
     addDamageWatch(winId);
+    m_proxies[winId] = new SNIProxy(winId, this);
 }
 
 void FdoSelectionManager::undock(xcb_window_t winId)
