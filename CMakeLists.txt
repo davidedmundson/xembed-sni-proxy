@@ -62,7 +62,6 @@ add_definitions(-Wall -std=c++11)
 set(HELPER_SOURCES
     main.cpp
     fdoselectionmanager.cpp
-    xcbutils.cpp
     snidbus.cpp
     sniproxy.cpp
 )

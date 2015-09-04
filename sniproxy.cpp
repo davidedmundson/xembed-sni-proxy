@@ -206,43 +206,102 @@ int SNIProxy::WindowId() const
 
 void SNIProxy::Activate(int x, int y)
 {
-    //it's best not to look at this code
-    //GTK doesn't like send_events and double checks the mouse position matches where the window is and is top level
-
-    m_container->setX(x-(s_embedSize/2));
-    m_container->setY(y-(s_embedSize/2));
-
-    {
-    const uint32_t values[] = {XCB_STACK_MODE_ABOVE};
-    xcb_configure_window(QX11Info::connection(), m_container->winId(), XCB_CONFIG_WINDOW_STACK_MODE, values);
-    }
-    Xcb::XCBEventDispatcher::instance()->mouseClick(m_windowId, false, x, y);
-
-    {
-    const uint32_t values2[] = {XCB_STACK_MODE_BELOW};
-    xcb_configure_window(QX11Info::connection(), m_container->winId(), XCB_CONFIG_WINDOW_STACK_MODE, values2);
-    }
-    m_container->setX(-1000);
-
+    sendClick(XCB_BUTTON_INDEX_1, x, y);
 }
 
 void SNIProxy::ContextMenu(int x, int y)
 {
-    QTimer::singleShot(5000, [=]() {
-        qDebug() << "sending mouse click";
-        Xcb::XCBEventDispatcher::instance()->mouseClick(m_windowId, true, x, y);
-    });
+    sendClick(XCB_BUTTON_INDEX_3, x, y);
 }
 
 void SNIProxy::SecondaryActivate(int x, int y)
 {
-//     mouseClick(false);
+    sendClick(XCB_BUTTON_INDEX_1, x, y);
 }
 
 void SNIProxy::Scroll(int delta, const QString& orientation)
 {
-
+    if (orientation == "vertical") {
+        sendClick(delta > 0 ? XCB_BUTTON_INDEX_4: XCB_BUTTON_INDEX_5, 0, 0);
+    } else {
+    }
 }
+
+void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
+{
+    //it's best not to look at this code
+    //GTK doesn't like send_events and double checks the mouse position matches where the window is and is top level
+    //in order to solve this we move the embed container over to where the mouse is then replay the event using send_event
+    //if patching, test with xchat + xchat context menus
+
+    auto c = QX11Info::connection();
+
+    //set our window so the middle is where the mouse is
+    m_container->setX(x-(s_embedSize/2));
+    m_container->setY(y-(s_embedSize/2));
+    const uint32_t stackAboveData[] = {XCB_STACK_MODE_ABOVE};
+    xcb_configure_window(c, m_container->winId(), XCB_CONFIG_WINDOW_STACK_MODE, stackAboveData);
+
+
+    //mouse down
+    {
+        xcb_button_press_event_t* event = new xcb_button_press_event_t;
+        memset(event, 0x00, sizeof(xcb_button_press_event_t));
+        event->response_type = XCB_BUTTON_PRESS;
+        event->event = m_windowId;
+        event->time = QX11Info::getTimestamp();
+        event->same_screen = 1;
+        event->root = QX11Info::appRootWindow();
+        event->root_x = x;
+        event->root_y = y;
+        event->event_x = s_embedSize / 2;
+        event->event_y = s_embedSize / 2;
+        event->child = 0;
+        event->state = 0;
+        event->detail = mouseButton;
+
+        xcb_send_event(c, false, m_windowId, XCB_EVENT_MASK_BUTTON_PRESS, (char *) event);
+        free(event);
+    }
+
+    //mouse up
+    {
+        xcb_button_release_event_t* event = new xcb_button_release_event_t;
+        memset(event, 0x00, sizeof(xcb_button_release_event_t));
+        event->response_type = XCB_BUTTON_RELEASE;
+        event->event = m_windowId;
+        event->time = QX11Info::getTimestamp();
+        event->same_screen = 1;
+        event->root = QX11Info::appRootWindow();
+        event->root_x = x;
+        event->root_y = y;
+        event->event_x = s_embedSize / 2;
+        event->event_y = s_embedSize / 2;
+        event->child = 0;
+        event->state = 0;
+        event->detail = mouseButton;
+
+        xcb_send_event(c, false, m_windowId, XCB_EVENT_MASK_BUTTON_RELEASE, (char *) event);
+        free(event);
+    }
+    const uint32_t stackBelowData[] = {XCB_STACK_MODE_BELOW};
+    xcb_configure_window(c, m_container->winId(), XCB_CONFIG_WINDOW_STACK_MODE, stackBelowData);
+    xcb_flush(c);
+
+
+    //if embedded clients want to display a context menu they sometimes do that based on where the window is
+    //so stay here for a moment longer
+    //however this leaves an ugly glitch so we hide the container window
+    //hiding the container is a problem as we don't get damage events, but it's OK to do for a short while
+
+    m_container->hide();
+
+    QTimer::singleShot(200, this, [this]() {
+        m_container->setX(-1000);
+        m_container->show();
+    });
+}
+
 
 
 

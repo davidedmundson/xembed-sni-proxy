@@ -152,6 +152,8 @@ Q_SIGNALS:
     void NewStatus(const QString &status);
 
 private:
+    void sendClick(uint8_t mouseButton, int x, int y);
+
     QDBusConnection m_dbus;
     WId m_windowId;
     static int s_serviceCount;

@@ -50,16 +50,6 @@ typedef xcb_window_t WindowId;
 
 template <typename T> using ScopedCPointer = QScopedPointer<T, QScopedPointerPodDeleter>;
 
-class XCBEventDispatcher
-{
-public:
-    static XCBEventDispatcher* instance();
-    void mouseClick(WindowId windowId, bool right, int x, int y); //FIXME terrible API
-
-private:
-};
-
-
 class Atom
 {
 public:
