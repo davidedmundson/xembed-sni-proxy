@@ -156,6 +156,7 @@ private:
     WId m_windowId;
     static int s_serviceCount;
     QPixmap m_pixmap;
+    QWindow *m_container;
 };
 
 #endif // SNIPROXY_H

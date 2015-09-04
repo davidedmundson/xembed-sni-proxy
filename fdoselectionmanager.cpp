@@ -97,6 +97,7 @@ void FdoSelectionManager::addDamageWatch(WId client)
     // the event mask will not be removed again. We cannot track whether another component also needs STRUCTURE_NOTIFY (e.g. KWindowSystem).
     // if we would remove the event mask again, other areas will break.
     xcb_change_window_attributes(c, client, XCB_CW_EVENT_MASK, &events);
+
 }
 
 bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* message, long int* result)
@@ -159,12 +160,19 @@ void FdoSelectionManager::initSelection()
 
     qApp->installNativeEventFilter(this);
 
-    show();
+//     show();
+//     move(200, 50);
+
+    //Tell kwin not to render us
+//     xcb_composite_redirect_window(QX11Info::connection(), winId, XCB_COMPOSITE_REDIRECT_MANUAL);
 }
 
 void FdoSelectionManager::dock(xcb_window_t winId)
 {
     qDebug() << "docking";
+
+    //don't render subwindows on the main display
+//     xcb_composite_redirect_subwindows(QX11Info::connection(), FdoSelectionManager::winId(), XCB_COMPOSITE_REDIRECT_MANUAL);
     m_proxies[winId] = new SNIProxy(winId, this);
     addDamageWatch(winId);
 }

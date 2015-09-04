@@ -40,6 +40,7 @@
 #include "statusnotifierwatcher_interface.h"
 
 static const char s_statusNotifierWatcherServiceName[] = "org.kde.StatusNotifierWatcher";
+static int s_embedSize = 48;
 
 int SNIProxy::s_serviceCount = 0;
 
@@ -69,7 +70,7 @@ xembed_message_send(xcb_window_t towin,
 SNIProxy::SNIProxy(WId wid, QObject* parent):
     QObject(parent),
     m_windowId(wid),
-    m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QString("DaveTray%1").arg(++s_serviceCount)))
+    m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QString("DaveTray%1").arg(s_serviceCount++)))
     // in order to have 2 SNIs we need to have 2 connections to DBus.. Do not simply use QDbusConnnection::sessionBus here
     //Ideally we should change the spec to pass a Path name along with a service name in RegisterItem as this is silly
 {
@@ -82,7 +83,16 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
     auto c = QX11Info::connection();
 
-    WId parentWinId = qobject_cast< QWidget* >(parent)->winId();
+    m_container = new QWindow;
+    WId parentWinId = m_container->winId();
+
+    m_container->resize(s_embedSize,s_embedSize);
+    m_container->setFlags(Qt::BypassWindowManagerHint);
+    m_container->show();
+
+    m_container->setX(-1000);
+    //ideally we want to use this to hide the UI. Doesn't work properly
+//     xcb_composite_redirect_window(c, parentWinId, XCB_COMPOSITE_REDIRECT_MANUAL);
 
     const uint32_t select_input_val[] =
     {
@@ -98,6 +108,9 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
                         parentWinId,
                         0, 0);
 
+    xcb_composite_redirect_window(c, wid, XCB_COMPOSITE_REDIRECT_MANUAL);
+
+
     /* we grab the window, but also make sure it's automatically reparented back
      * to the root window if we should die.
     */
@@ -107,14 +120,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     xembed_message_send(wid, XEMBED_EMBEDDED_NOTIFY, parentWinId, 0, 0);
 
     //resize window we're embedding
-    const int baseSize = 48;
-    /*const*/ uint32_t config_vals[4] = { 0, 0 , baseSize, baseSize };
-
-    //set an X and Y for viewing in the debug UI.
-    //so they don't overlap
-    //TODO this is going to run out of space we need to relayout everything in the main view properly
-    config_vals[0] = baseSize * s_serviceCount % 480;
-    config_vals[1] = baseSize * qFloor(s_serviceCount / 10);
+    const uint32_t config_vals[4] = { 0, 0 , s_embedSize, s_embedSize };
 
     auto cookie = xcb_configure_window(c, wid,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
@@ -132,12 +138,13 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 SNIProxy::~SNIProxy()
 {
     QDBusConnection::disconnectFromBus(m_dbus.name());
+    delete m_container;
 }
 
 void SNIProxy::update()
 {
     //get pixmap (xcb_drawable)
-    auto getImageCookie = xcb_get_image(QX11Info::connection(), XCB_IMAGE_FORMAT_Z_PIXMAP, m_windowId, 0, 0, 48, 48, 0xFFFFFF);
+    auto getImageCookie = xcb_get_image(QX11Info::connection(), XCB_IMAGE_FORMAT_Z_PIXMAP, m_windowId, 0, 0, s_embedSize, s_embedSize, 0xFFFFFF);
 
     //get image from that
     auto reply = xcb_get_image_reply(QX11Info::connection(), getImageCookie, Q_NULLPTR);
@@ -148,7 +155,7 @@ void SNIProxy::update()
 
     auto t = xcb_get_image_data(reply);
 
-    QImage image(xcb_get_image_data(reply), 48, 48, 48*4, QImage::Format_ARGB32);
+    QImage image(xcb_get_image_data(reply), s_embedSize, s_embedSize, s_embedSize*4, QImage::Format_ARGB32);
 
     //FIXME reply leaks
 
@@ -199,12 +206,32 @@ int SNIProxy::WindowId() const
 
 void SNIProxy::Activate(int x, int y)
 {
+    //it's best not to look at this code
+    //GTK doesn't like send_events and double checks the mouse position matches where the window is and is top level
+
+    m_container->setX(x-(s_embedSize/2));
+    m_container->setY(y-(s_embedSize/2));
+
+    {
+    const uint32_t values[] = {XCB_STACK_MODE_ABOVE};
+    xcb_configure_window(QX11Info::connection(), m_container->winId(), XCB_CONFIG_WINDOW_STACK_MODE, values);
+    }
     Xcb::XCBEventDispatcher::instance()->mouseClick(m_windowId, false, x, y);
+
+    {
+    const uint32_t values2[] = {XCB_STACK_MODE_BELOW};
+    xcb_configure_window(QX11Info::connection(), m_container->winId(), XCB_CONFIG_WINDOW_STACK_MODE, values2);
+    }
+    m_container->setX(-1000);
+
 }
 
 void SNIProxy::ContextMenu(int x, int y)
 {
-    Xcb::XCBEventDispatcher::instance()->mouseClick(m_windowId, true, x, y);
+    QTimer::singleShot(5000, [=]() {
+        qDebug() << "sending mouse click";
+        Xcb::XCBEventDispatcher::instance()->mouseClick(m_windowId, true, x, y);
+    });
 }
 
 void SNIProxy::SecondaryActivate(int x, int y)
