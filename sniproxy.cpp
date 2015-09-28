@@ -114,11 +114,13 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
         As a last resort set opacity to 0 just to make sure this container never appears
     */
 
+#ifndef VISUAL_DEBUG
     const uint32_t stackBelowData[] = {XCB_STACK_MODE_BELOW};
     xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackBelowData);
 
     NETWinInfo wm(c, m_containerWid, screen->root, 0);
     wm.setOpacity(0);
+#endif
 
     xcb_flush(c);
 
@@ -330,11 +332,11 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
         xcb_send_event(c, false, m_windowId, XCB_EVENT_MASK_BUTTON_RELEASE, (char *) event);
         free(event);
     }
+#ifndef VISUAL_DEBUG
     const uint32_t stackBelowData[] = {XCB_STACK_MODE_BELOW};
     xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackBelowData);
-
-//     xcb_flush(c);
-}
+#endif
+    }
 
 
 
