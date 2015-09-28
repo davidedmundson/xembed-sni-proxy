@@ -165,8 +165,13 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              config_vals);
 
+    xcb_clear_area(c, 0, wid, 0, 0, s_embedSize, s_embedSize);
+
     //show the embedded window otherwise nothing happens
     xcb_map_window(c, wid);
+
+        xcb_clear_area(c, 0, wid, 0, 0, s_embedSize, s_embedSize);
+
 
     //awesome's system trays has a flush here...so we should too
     xcb_flush(c);
