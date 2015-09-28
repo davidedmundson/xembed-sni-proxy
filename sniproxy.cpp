@@ -34,7 +34,10 @@
 #include <QGuiApplication>
 #include <QTimer>
 
+#include <QPainter>
+
 #include <KWindowSystem>
+#include <netwm.h>
 
 #include "statusnotifieritemadaptor.h"
 #include "statusnotifierwatcher_interface.h"
@@ -78,32 +81,68 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
     auto c = QX11Info::connection();
 
-    m_container = new QWindow;
-    WId parentWinId = m_container->winId();
+    auto screen = xcb_setup_roots_iterator (xcb_get_setup (c)).data;
+    m_containerWid = xcb_generate_id(c);
+    uint32_t             values[2];
+    auto mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT;
+    values[0] = screen->black_pixel; //draw a solid background so the embeded icon doesn't get garbage in it
+    values[1] = true; //bypass wM
+    xcb_create_window (c,                          /* connection    */
+                    XCB_COPY_FROM_PARENT,          /* depth         */
+                     m_containerWid,                  /* window Id     */
+                     screen->root,                 /* parent window */
+                     -500, 0,                      /* x, y          */
+                     s_embedSize, s_embedSize,     /* width, height */
+                     0,                           /* border_width  */
+                     XCB_WINDOW_CLASS_INPUT_OUTPUT,/* class         */
+                     screen->root_visual,          /* visual        */
+                     mask, values);                /* masks         */
 
-    m_container->resize(s_embedSize,s_embedSize);
-    m_container->setFlags(Qt::BypassWindowManagerHint);
-    m_container->show();
 
-    m_container->setX(-1000);
-    //ideally we want to use this to hide the UI. Doesn't work properly
-//     xcb_composite_redirect_window(c, parentWinId, XCB_COMPOSITE_REDIRECT_MANUAL);
 
-    const uint32_t select_input_val[] =
-    {
-        XCB_EVENT_MASK_STRUCTURE_NOTIFY
-            | XCB_EVENT_MASK_PROPERTY_CHANGE
-            | XCB_EVENT_MASK_ENTER_WINDOW
-            | XCB_EVENT_MASK_BUTTON_PRESS
-            | XCB_EVENT_MASK_BUTTON_RELEASE
-    };
-    xcb_change_window_attributes(c, wid, XCB_CW_EVENT_MASK,
-                                 select_input_val);
+    /*
+        We need the window to exist and be mapped otherwise the child won't render it's contents
+
+        We also need it to exist in the right place to get the clicks working as GTK will check sendEvent locations to see if our window is in the right place. So even though our contents are drawn via compositing we still put this window in the right place
+
+        We can't composite it away anything parented owned by the root window (apparently)
+        Stack Under works in the non composited case, but it doesn't seem to work in kwin's composited case (probably need set relevant NETWM hint)
+
+        As a last resort set opacity to 0 just to make sure this container never appears
+    */
+
+    const uint32_t stackBelowData[] = {XCB_STACK_MODE_BELOW};
+    xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackBelowData);
+
+    NETWinInfo wm(c, m_containerWid, screen->root, 0);
+    wm.setOpacity(0);
+
+    xcb_flush(c);
+
+    xcb_map_window(c, m_containerWid);
+
+
+
+//errors with bad attribute...no idea why
+//     const uint32_t select_input_val[] =
+//     {
+//         XCB_EVENT_MASK_STRUCTURE_NOTIFY
+//             | XCB_EVENT_MASK_PROPERTY_CHANGE
+//             | XCB_EVENT_MASK_ENTER_WINDOW
+//             | XCB_EVENT_MASK_BUTTON_PRESS
+//             | XCB_EVENT_MASK_BUTTON_RELEASE
+//     };
+//     xcb_change_window_attributes(c, wid, XCB_CW_EVENT_MASK,
+//                                  select_input_val);
+
     xcb_reparent_window(c, wid,
-                        parentWinId,
+                        m_containerWid,
                         0, 0);
 
-//     xcb_composite_redirect_window(c, wid, XCB_COMPOSITE_REDIRECT_MANUAL);
+    /*
+     * Render the embedded window offscreen
+     */
+    xcb_composite_redirect_window(c, wid, XCB_COMPOSITE_REDIRECT_MANUAL);
 
 
     /* we grab the window, but also make sure it's automatically reparented back
@@ -112,14 +151,16 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     xcb_change_save_set(c, XCB_SET_MODE_INSERT, wid);
 
     //tell client we're embedding it
-    xembed_message_send(wid, XEMBED_EMBEDDED_NOTIFY, parentWinId, 0, 0);
+    xembed_message_send(wid, XEMBED_EMBEDDED_NOTIFY, m_containerWid, 0, 0);
 
     //resize window we're embedding
     const uint32_t config_vals[4] = { 0, 0 , s_embedSize, s_embedSize };
 
-    auto cookie = xcb_configure_window(c, wid,
+    xcb_configure_window(c, wid,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              config_vals);
+
+//     xcb_clear_area(c, 0, wid, 0, 0, s_embedSize, s_embedSize);
 
     //show the embedded window otherwise nothing happens
     xcb_map_window(c, wid);
@@ -129,15 +170,14 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
     //there's no damage event for the first paint, and sometimes it's not drawn immediately
     //not ideal, but it works better than nothing
-
-    //test with xchat
+    //test with xchat before changing
     QTimer::singleShot(500, this, &SNIProxy::update);
 }
 
 SNIProxy::~SNIProxy()
 {
     QDBusConnection::disconnectFromBus(m_dbus.name());
-    delete m_container;
+    //we created a window, we should remove it
 }
 
 void SNIProxy::update()
@@ -236,12 +276,13 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
     auto c = QX11Info::connection();
 
     //set our window so the middle is where the mouse is
-    m_container->setX(x-(s_embedSize/2));
-    m_container->setY(y-(s_embedSize/2));
     const uint32_t stackAboveData[] = {XCB_STACK_MODE_ABOVE};
-    xcb_configure_window(c, m_container->winId(), XCB_CONFIG_WINDOW_STACK_MODE, stackAboveData);
+    xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackAboveData);
 
-
+    const uint32_t config_vals[4] = {x-(s_embedSize/2), y-(s_embedSize/2) , s_embedSize, s_embedSize };
+    xcb_configure_window(c, m_containerWid,
+                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                             config_vals);
     //mouse down
     {
         xcb_button_press_event_t* event = new xcb_button_press_event_t;
@@ -284,21 +325,9 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
         free(event);
     }
     const uint32_t stackBelowData[] = {XCB_STACK_MODE_BELOW};
-    xcb_configure_window(c, m_container->winId(), XCB_CONFIG_WINDOW_STACK_MODE, stackBelowData);
-    xcb_flush(c);
+    xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackBelowData);
 
-
-    //if embedded clients want to display a context menu they sometimes do that based on where the window is
-    //so stay here for a moment longer
-    //however this leaves an ugly glitch so we hide the container window
-    //hiding the container is a problem as we don't get damage events, but it's OK to do for a short while
-
-    m_container->hide();
-
-    QTimer::singleShot(200, this, [this]() {
-        m_container->setX(-1000);
-        m_container->show();
-    });
+//     xcb_flush(c);
 }
 
 

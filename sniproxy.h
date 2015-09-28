@@ -22,7 +22,6 @@
 #define SNIPROXY_H
 
 #include <QObject>
-#include <QWindow>
 #include <QDBusArgument>
 #include <QDBusConnection>
 #include <QDBusObjectPath>
@@ -156,9 +155,10 @@ private:
 
     QDBusConnection m_dbus;
     WId m_windowId;
+    WId m_containerWid;
     static int s_serviceCount;
     QPixmap m_pixmap;
-    QWindow *m_container;
+    int m_offscreenPosition;
 };
 
 #endif // SNIPROXY_H
