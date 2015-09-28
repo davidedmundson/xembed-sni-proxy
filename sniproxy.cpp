@@ -81,6 +81,11 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
     auto c = QX11Info::connection();
 
+    //get the visual of the window we're embedding as it can differ from the root window
+    auto cookie = xcb_get_window_attributes(c, wid);
+    auto clientAttributes = xcb_get_window_attributes_reply(c, cookie, 0); //LEAKS
+
+    //create a container window
     auto screen = xcb_setup_roots_iterator (xcb_get_setup (c)).data;
     m_containerWid = xcb_generate_id(c);
     uint32_t             values[2];
@@ -91,14 +96,12 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
                     XCB_COPY_FROM_PARENT,          /* depth         */
                      m_containerWid,                  /* window Id     */
                      screen->root,                 /* parent window */
-                     -500, 0,                      /* x, y          */
+                     500, 0,                      /* x, y          */
                      s_embedSize, s_embedSize,     /* width, height */
                      0,                           /* border_width  */
                      XCB_WINDOW_CLASS_INPUT_OUTPUT,/* class         */
-                     screen->root_visual,          /* visual        */
+                     clientAttributes->visual,     /* visual        */
                      mask, values);                /* masks         */
-
-
 
     /*
         We need the window to exist and be mapped otherwise the child won't render it's contents
@@ -142,7 +145,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     /*
      * Render the embedded window offscreen
      */
-    xcb_composite_redirect_window(c, wid, XCB_COMPOSITE_REDIRECT_MANUAL);
+//     xcb_composite_redirect_window(c, wid, XCB_COMPOSITE_REDIRECT_MANUAL);
 
 
     /* we grab the window, but also make sure it's automatically reparented back
