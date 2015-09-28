@@ -276,13 +276,16 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
     //in order to solve this we move the embed container over to where the mouse is then replay the event using send_event
     //if patching, test with xchat + xchat context menus
 
+    //note x,y are not actually where the mouse is, but the plasmoid
+    //ideally we should make this match the plasmoid hit area
+
     auto c = QX11Info::connection();
 
     //set our window so the middle is where the mouse is
     const uint32_t stackAboveData[] = {XCB_STACK_MODE_ABOVE};
     xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackAboveData);
 
-    const uint32_t config_vals[4] = {x-(s_embedSize/2), y-(s_embedSize/2) , s_embedSize, s_embedSize };
+    const uint32_t config_vals[4] = {x, y, s_embedSize, s_embedSize };
     xcb_configure_window(c, m_containerWid,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              config_vals);
