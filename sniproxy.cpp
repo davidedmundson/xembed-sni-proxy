@@ -147,7 +147,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     /*
      * Render the embedded window offscreen
      */
-//     xcb_composite_redirect_window(c, wid, XCB_COMPOSITE_REDIRECT_MANUAL);
+    xcb_composite_redirect_window(c, wid, XCB_COMPOSITE_REDIRECT_MANUAL);
 
 
     /* we grab the window, but also make sure it's automatically reparented back
