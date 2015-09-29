@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-project(davetray)
+project(xembedsniproxy)
 
 # Silence CMake 3.0 warnings
-# if(POLICY CMP0043)
-#     cmake_policy(SET CMP0043 OLD)
-# endif()
+if(POLICY CMP0043)
+    cmake_policy(SET CMP0043 OLD)
+endif()
 
 find_package(ECM 0.0.11 REQUIRED NO_MODULE)
 include(FeatureSummary)
@@ -13,9 +13,6 @@ include(WriteBasicConfigVersionFile)
 include(GenerateExportHeader)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR})
-# set(CMAKE_INCLUDE_CURRENT_DIR ON)
-# set(CMAKE_AUTOMOC ON)
-# set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
     Core
@@ -33,7 +30,6 @@ include(ECMOptionalAddSubdirectory)
 
 # required frameworks by Core
 find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
-    Notifications
     WindowSystem
 )
 
@@ -59,20 +55,20 @@ find_package(XCB
 
 add_definitions(-Wall -std=c++11)
 
-set(HELPER_SOURCES
+set(XEMBED_SNI_PROXY_SOURCES
     main.cpp
     fdoselectionmanager.cpp
     snidbus.cpp
     sniproxy.cpp
 )
 
-qt5_add_dbus_adaptor(HELPER_SOURCES org.kde.StatusNotifierItem.xml
+qt5_add_dbus_adaptor(XEMBED_SNI_PROXY_SOURCES org.kde.StatusNotifierItem.xml
                      sniproxy.h SNIProxy)
 
 set(statusnotifierwatcher_xml org.kde.StatusNotifierWatcher.xml)
-qt5_add_dbus_interface(HELPER_SOURCES ${statusnotifierwatcher_xml} statusnotifierwatcher_interface)
+qt5_add_dbus_interface(XEMBED_SNI_PROXY_SOURCES ${statusnotifierwatcher_xml} statusnotifierwatcher_interface)
 
-add_executable(davetray ${HELPER_SOURCES})
+add_executable(xembedsniproxy ${XEMBED_SNI_PROXY_SOURCES})
 
 set(kwin_XCB_LIBS
     XCB::XCB
@@ -91,12 +87,14 @@ set(kwin_XCB_LIBS
 
 set_package_properties(XCB PROPERTIES TYPE REQUIRED)
 
-target_link_libraries(davetray
+target_link_libraries(xembedsniproxy
     Qt5::Core
-    Qt5::Widgets
     Qt5::X11Extras
     Qt5::DBus
     KF5::WindowSystem
     ${kwin_XCB_LIBS}
 )
+
+install(TARGETS xembedsniproxy ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+install(FILES xembedsniproxy.desktop DESTINATION ${KDE_INSTALL_AUTOSTARTDIR})
 
