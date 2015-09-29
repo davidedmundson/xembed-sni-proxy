@@ -66,8 +66,8 @@ xembed_message_send(xcb_window_t towin,
 
 SNIProxy::SNIProxy(WId wid, QObject* parent):
     QObject(parent),
-    m_windowId(wid),
-    m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QString("DaveTray%1").arg(s_serviceCount++)))
+    m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QString("XembedSniProxy%1").arg(s_serviceCount++))),
+    m_windowId(wid)
     // in order to have 2 SNIs we need to have 2 connections to DBus.. Do not simply use QDbusConnnection::sessionBus here
     //Ideally we should change the spec to pass a Path name along with a service name in RegisterItem as this is silly
 {
@@ -80,10 +80,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
     auto c = QX11Info::connection();
 
-    //get the visual of the window we're embedding as it can differ from the root window
-    auto cookie = xcb_get_window_attributes(c, wid);
-    auto clientAttributes = xcb_get_window_attributes_reply(c, cookie, 0); //LEAKS
-
     //create a container window
     auto screen = xcb_setup_roots_iterator (xcb_get_setup (c)).data;
     m_containerWid = xcb_generate_id(c);
@@ -93,13 +89,13 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     values[1] = true; //bypass wM
     xcb_create_window (c,                          /* connection    */
                     XCB_COPY_FROM_PARENT,          /* depth         */
-                     m_containerWid,                  /* window Id     */
+                     m_containerWid,               /* window Id     */
                      screen->root,                 /* parent window */
-                     500, 0,                      /* x, y          */
+                     -500, 0,                       /* x, y          */
                      s_embedSize, s_embedSize,     /* width, height */
                      0,                           /* border_width  */
                      XCB_WINDOW_CLASS_INPUT_OUTPUT,/* class         */
-                     clientAttributes->visual,     /* visual        */
+                     screen->root_visual,          /* visual        */
                      mask, values);                /* masks         */
 
     /*
@@ -124,20 +120,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     xcb_flush(c);
 
     xcb_map_window(c, m_containerWid);
-
-
-
-//errors with bad attribute...no idea why
-//     const uint32_t select_input_val[] =
-//     {
-//         XCB_EVENT_MASK_STRUCTURE_NOTIFY
-//             | XCB_EVENT_MASK_PROPERTY_CHANGE
-//             | XCB_EVENT_MASK_ENTER_WINDOW
-//             | XCB_EVENT_MASK_BUTTON_PRESS
-//             | XCB_EVENT_MASK_BUTTON_RELEASE
-//     };
-//     xcb_change_window_attributes(c, wid, XCB_CW_EVENT_MASK,
-//                                  select_input_val);
 
     xcb_reparent_window(c, wid,
                         m_containerWid,
@@ -172,7 +154,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
         xcb_clear_area(c, 0, wid, 0, 0, s_embedSize, s_embedSize);
 
 
-    //awesome's system trays has a flush here...so we should too
     xcb_flush(c);
 
     //there's no damage event for the first paint, and sometimes it's not drawn immediately
@@ -184,7 +165,6 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 SNIProxy::~SNIProxy()
 {
     QDBusConnection::disconnectFromBus(m_dbus.name());
-    //we created a window, we should remove it
 }
 
 void SNIProxy::update()
