@@ -151,8 +151,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     //show the embedded window otherwise nothing happens
     xcb_map_window(c, wid);
 
-        xcb_clear_area(c, 0, wid, 0, 0, s_embedSize, s_embedSize);
-
+    xcb_clear_area(c, 0, wid, 0, 0, s_embedSize, s_embedSize);
 
     xcb_flush(c);
 
