@@ -193,19 +193,15 @@ void SNIProxy::update()
     auto getImageCookie = xcb_get_image(QX11Info::connection(), XCB_IMAGE_FORMAT_Z_PIXMAP, m_windowId, 0, 0, s_embedSize, s_embedSize, 0xFFFFFF);
 
     //get image from that
-    auto reply = xcb_get_image_reply(QX11Info::connection(), getImageCookie, Q_NULLPTR);
+    QScopedPointer<xcb_get_image_reply_t, QScopedPointerPodDeleter> reply(xcb_get_image_reply(QX11Info::connection(), getImageCookie, Q_NULLPTR));
     if (!reply) {
         qDebug() << "no image fetched from embedded client :(";
         return;
     }
 
-    auto t = xcb_get_image_data(reply);
+    QImage image(xcb_get_image_data(reply.data()), s_embedSize, s_embedSize, s_embedSize*4, QImage::Format_ARGB32);
+    m_pixmap = QPixmap::fromImage(image).copy(); //copy as image refers to temporary data in reply
 
-    QImage image(xcb_get_image_data(reply), s_embedSize, s_embedSize, s_embedSize*4, QImage::Format_ARGB32);
-
-    //FIXME reply leaks
-
-    m_pixmap = QPixmap::fromImage(image);
     emit NewIcon();
 }
 
