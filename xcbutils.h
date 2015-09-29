@@ -114,9 +114,9 @@ public:
         messageData("_NET_SYSTEM_TRAY_MESSAGE_DATA")
     {}
 
+    Atom xembedAtom;
     Atom selectionAtom;
     Atom opcodeAtom;
-    Atom xembedAtom;
     Atom messageData;
 
 };
