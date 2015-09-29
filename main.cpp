@@ -1,4 +1,4 @@
-#include <QApplication>
+#include <QGuiApplication>
 #include "fdoselectionmanager.h"
 
 #include "xcbutils.h"
@@ -12,7 +12,8 @@ namespace Xcb {
 
 int main(int argc, char ** argv)
 {
-    QApplication app(argc, argv);
+    QGuiApplication app(argc, argv);
+    app.setDesktopSettingsAware(false);
     app.setQuitOnLastWindowClosed(false);
 
     qDBusRegisterMetaType<KDbusImageStruct>();
