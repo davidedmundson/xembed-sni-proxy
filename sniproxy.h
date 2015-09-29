@@ -158,7 +158,6 @@ private:
     WId m_containerWid;
     static int s_serviceCount;
     QPixmap m_pixmap;
-    int m_offscreenPosition;
 };
 
 #endif // SNIPROXY_H
