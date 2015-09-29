@@ -1,4 +1,4 @@
-====XEmbed SNI Proxy===
+##XEmbed SNI Proxy
 
 The goal of this project is to make xembed system trays available in Plasma.
 
@@ -8,7 +8,7 @@ Ideally we also want this to work in an xwayland session, making X system tray i
 
 This project should be portable onto all other DEs that speak SNI.
 
-===How it works (in theory) ===
+##How it works (in theory)
 
 * We register a window as a system tray container
 * We render embeded windows composited offscreen
