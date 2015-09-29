@@ -22,14 +22,14 @@
 #ifndef FDOSELECTIONMANAGER_H
 #define FDOSELECTIONMANAGER_H
 
-#include <QWidget>
+#include <QWindow>
 #include <QAbstractNativeEventFilter>
 
 #include <xcb/xcb.h>
 
 class SNIProxy;
 
-class FdoSelectionManager : public QWidget, public QAbstractNativeEventFilter
+class FdoSelectionManager : public QWindow, public QAbstractNativeEventFilter
 {
     Q_OBJECT
 
