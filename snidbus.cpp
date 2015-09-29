@@ -1,5 +1,5 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
+ * SNI DBus Serialisers
  * Copyright 2015  David Edmundson <davidedmundson@kde.org>
  * Copyright 2009 by Marco Martin <notmart@gmail.com>
  *

@@ -1,6 +1,6 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2015  <copyright holder> <email>
+ * Holds one embedded window, registers as DBus entry
+ * Copyright (C) 2015 <davidedmundson@kde.org> David Edmundson
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
