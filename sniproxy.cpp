@@ -27,7 +27,6 @@
 
 #include "xcbutils.h"
 
-#include <QWidget>
 #include <QDebug>
 #include <QX11Info>
 #include <QScreen>
