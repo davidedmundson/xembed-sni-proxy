@@ -31,7 +31,6 @@
 #include <KWindowSystem>
 
 #include <xcb/xcb.h>
-#include <xcb/xcb_icccm.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_event.h>
 #include <xcb/composite.h>
