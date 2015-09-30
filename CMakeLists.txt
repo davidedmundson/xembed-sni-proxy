@@ -17,7 +17,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_D
 find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
     Core
     DBus
-    Widgets
+    Gui
     X11Extras
 )
 
@@ -34,22 +34,15 @@ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
 )
 
 # All the required XCB components
-#I probably don't need /all/ of these. Delete later
 find_package(XCB
     REQUIRED COMPONENTS
         XCB
         XFIXES
         DAMAGE
         COMPOSITE
-        SHAPE
-        SYNC
-        RENDER
         RANDR
-        KEYSYMS
-        IMAGE
         SHM
         UTIL
-        GLX
 )
 
 
@@ -75,13 +68,8 @@ set(kwin_XCB_LIBS
     XCB::XFIXES
     XCB::DAMAGE
     XCB::COMPOSITE
-    XCB::SHAPE
-    XCB::SYNC
-    XCB::RENDER
     XCB::RANDR
-    XCB::KEYSYMS
     XCB::SHM
-    XCB::GLX
     XCB::UTIL
 )
 

@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <xcb/composite.h>
 #include <xcb/randr.h>
 #include <xcb/shm.h>
-#include <xcb/xcb_icccm.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_event.h>
 #include <xcb/damage.h>
