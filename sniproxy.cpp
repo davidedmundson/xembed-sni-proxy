@@ -175,6 +175,10 @@ void SNIProxy::update()
     emit NewIcon();
 }
 
+void sni_cleanup_xcb_image(void *data) {
+    xcb_image_destroy(static_cast<xcb_image_t*>(data));
+}
+
 QImage SNIProxy::getImageNonComposite()
 {
     auto c = QX11Info::connection();
@@ -183,11 +187,9 @@ QImage SNIProxy::getImageNonComposite()
 
     xcb_image_t *image = xcb_image_get(c, m_windowId, 0, 0, geom->width, geom->height, 0xFFFFFF, XCB_IMAGE_FORMAT_Z_PIXMAP);
 
-    QImage qimage(image->data, image->width, image->height, image->stride, QImage::Format_ARGB32);
+    QImage qimage(image->data, image->width, image->height, image->stride, QImage::Format_ARGB32, sni_cleanup_xcb_image, image);
 
-    QImage image2 = qimage.copy();
-    xcb_image_destroy(image);
-    return image2; //TODO lean the how do use the QImage ctor that takes a function pointer to the destructor and a data pointer.
+    return qimage;
 }
 
 // QImage SNIProxy::getImageComposite()
