@@ -178,13 +178,17 @@ void SNIProxy::update()
 
 QImage SNIProxy::getImageNonComposite()
 {
-    xcb_image_t *image = xcb_image_get(QX11Info::connection(), m_windowId, 0, 0, s_embedSize, s_embedSize, 0xFFFFFF, XCB_IMAGE_FORMAT_Z_PIXMAP);
+    auto c = QX11Info::connection();
+    auto cookie = xcb_get_geometry(c, m_windowId);
+    QScopedPointer<xcb_get_geometry_reply_t> geom(xcb_get_geometry_reply(c, cookie, Q_NULLPTR));
 
-    //LEAK
+    xcb_image_t *image = xcb_image_get(c, m_windowId, 0, 0, geom->width, geom->height, 0xFFFFFF, XCB_IMAGE_FORMAT_Z_PIXMAP);
 
-    QImage qimage(image->data, s_embedSize, s_embedSize, image->stride, QImage::Format_ARGB32);
-    //copy as image refers to temporary data in reply
-    return qimage.copy();
+    QImage qimage(image->data, image->width, image->height, image->stride, QImage::Format_ARGB32);
+
+    QImage image2 = qimage.copy();
+    xcb_image_destroy(image);
+    return image2; //TODO lean the how do use the QImage ctor that takes a function pointer to the destructor and a data pointer.
 }
 
 // QImage SNIProxy::getImageComposite()
