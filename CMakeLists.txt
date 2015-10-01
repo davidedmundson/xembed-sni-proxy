@@ -43,6 +43,7 @@ find_package(XCB
         RANDR
         SHM
         UTIL
+        IMAGE
 )
 
 
