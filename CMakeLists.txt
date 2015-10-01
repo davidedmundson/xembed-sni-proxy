@@ -83,6 +83,7 @@ set(kwin_XCB_LIBS
     XCB::SHM
     XCB::GLX
     XCB::UTIL
+    XCB::IMAGE
 )
 
 set_package_properties(XCB PROPERTIES TYPE REQUIRED)
