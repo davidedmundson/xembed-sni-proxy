@@ -49,7 +49,8 @@ class SNIProxy : public QObject
 //     Q_PROPERTY(QString IconThemePath READ IconThemePath)
 //     Q_PROPERTY(QDBusObjectPath Menu READ Menu)
 public:
-    SNIProxy(WId wid, QObject *parent=0);
+    SNIProxy(WId wid, QWindow *parent);
+    SNIProxy(WId wid, QObject *parent=0, qreal devicePixelRatio=1);
     ~SNIProxy();
 
     void update();
@@ -158,6 +159,7 @@ private:
     WId m_windowId;
     WId m_containerWid;
     static int s_serviceCount;
+    qreal m_devicePixelRatio;
     QPixmap m_pixmap;
 };
 

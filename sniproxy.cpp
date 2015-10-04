@@ -31,6 +31,7 @@
 #include <QX11Info>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QWindow>
 #include <QTimer>
 
 #include <QPainter>
@@ -64,10 +65,13 @@ xembed_message_send(xcb_window_t towin,
     xcb_send_event(QX11Info::connection(), false, towin, XCB_EVENT_MASK_NO_EVENT, (char *) &ev);
 }
 
-SNIProxy::SNIProxy(WId wid, QObject* parent):
+SNIProxy::SNIProxy(WId wid, QWindow* parent): SNIProxy(wid, parent, parent->devicePixelRatio()) {}
+
+SNIProxy::SNIProxy(WId wid, QObject* parent, qreal devicePixelRatio):
     QObject(parent),
     m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QString("XembedSniProxy%1").arg(s_serviceCount++))),
-    m_windowId(wid)
+    m_windowId(wid),
+    m_devicePixelRatio(devicePixelRatio)
     // in order to have 2 SNIs we need to have 2 connections to DBus.. Do not simply use QDbusConnnection::sessionBus here
     //Ideally we should change the spec to pass a Path name along with a service name in RegisterItem as this is silly
 {
@@ -189,7 +193,7 @@ QImage SNIProxy::getImageNonComposite()
 
     QImage qimage(image->data, image->width, image->height, image->stride, QImage::Format_ARGB32, sni_cleanup_xcb_image, image);
 
-    return qimage;
+    return qimage.scaled(qimage.size() * m_devicePixelRatio);
 }
 
 // QImage SNIProxy::getImageComposite()
