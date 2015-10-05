@@ -80,6 +80,8 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
     auto c = QX11Info::connection();
 
+    auto cookie = xcb_get_geometry(c, m_windowId);
+    QScopedPointer<xcb_get_geometry_reply_t> clientGeom(xcb_get_geometry_reply(c, cookie, Q_NULLPTR));
     //create a container window
     auto screen = xcb_setup_roots_iterator (xcb_get_setup (c)).data;
     m_containerWid = xcb_generate_id(c);
@@ -139,12 +141,27 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     //tell client we're embedding it
     xembed_message_send(wid, XEMBED_EMBEDDED_NOTIFY, m_containerWid, 0, 0);
 
-    //resize window we're embedding
-    const uint32_t config_vals[4] = { 0, 0 };
+    //move window we're embedding
+    const uint32_t windowMoveConfigVals[2] = { 0, 0 };
 
     xcb_configure_window(c, wid,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y,
-                             config_vals);
+                             windowMoveConfigVals);
+
+
+    //if the window is a clearly stupid size resize to be something sensible
+    //this is needed as chormium and such when resized just fill the icon with transparent space and only draw in the middle
+    //however spotify does need this as by default the window size is 900px wide.
+    //use an artbitrary heuristic to make sure icons are always sensible
+    if (clientGeom->width < 12 || clientGeom->width > s_embedSize ||
+        clientGeom->height < 12 || clientGeom->height > s_embedSize)
+    {
+        const uint32_t windowMoveConfigVals[2] = { s_embedSize, s_embedSize };
+        xcb_configure_window(c, wid,
+                                XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                                windowMoveConfigVals);
+    }
+
 
     xcb_clear_area(c, 0, wid, 0, 0, s_embedSize, s_embedSize);
 
