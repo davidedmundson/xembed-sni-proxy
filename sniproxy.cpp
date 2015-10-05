@@ -82,6 +82,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
     auto cookie = xcb_get_geometry(c, m_windowId);
     QScopedPointer<xcb_get_geometry_reply_t> clientGeom(xcb_get_geometry_reply(c, cookie, Q_NULLPTR));
+
     //create a container window
     auto screen = xcb_setup_roots_iterator (xcb_get_setup (c)).data;
     m_containerWid = xcb_generate_id(c);
@@ -187,7 +188,6 @@ void SNIProxy::update()
 {
 
     //get pixmap (xcb_drawable)
-
     m_pixmap = QPixmap::fromImage(getImageNonComposite());
     emit NewIcon();
 }
@@ -310,8 +310,8 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
         event->root = QX11Info::appRootWindow();
         event->root_x = x;
         event->root_y = y;
-        event->event_x = s_embedSize / 2;
-        event->event_y = s_embedSize / 2;
+        event->event_x = 0;
+        event->event_y = 0;
         event->child = 0;
         event->state = 0;
         event->detail = mouseButton;
@@ -331,8 +331,8 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
         event->root = QX11Info::appRootWindow();
         event->root_x = x;
         event->root_y = y;
-        event->event_x = s_embedSize / 2;
-        event->event_y = s_embedSize / 2;
+        event->event_x = 0;
+        event->event_y = 0;
         event->child = 0;
         event->state = 0;
         event->detail = mouseButton;
