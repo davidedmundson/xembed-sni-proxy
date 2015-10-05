@@ -42,7 +42,7 @@
 #include "statusnotifierwatcher_interface.h"
 
 static const char s_statusNotifierWatcherServiceName[] = "org.kde.StatusNotifierWatcher";
-static int s_embedSize = 48;
+static int s_embedSize = 48; //max size of window to embed. We no longer resize the embedded window as Chromium acts stupidly.
 
 int SNIProxy::s_serviceCount = 0;
 
@@ -140,10 +140,10 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     xembed_message_send(wid, XEMBED_EMBEDDED_NOTIFY, m_containerWid, 0, 0);
 
     //resize window we're embedding
-    const uint32_t config_vals[4] = { 0, 0 , s_embedSize, s_embedSize };
+    const uint32_t config_vals[4] = { 0, 0 };
 
     xcb_configure_window(c, wid,
-                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y,
                              config_vals);
 
     xcb_clear_area(c, 0, wid, 0, 0, s_embedSize, s_embedSize);
