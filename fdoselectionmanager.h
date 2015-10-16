@@ -41,14 +41,14 @@ protected:
 
 private:
     void initSelection();
-    void addDamageWatch(WId client);
+    void addDamageWatch(xcb_window_t client);
     void dock(xcb_window_t embed_win);
     void undock(xcb_window_t client);
 
     uint8_t m_damageEventBase;
 
-    QHash<WId, u_int32_t> m_damageWatches;
-    QHash<WId, SNIProxy*> m_proxies;
+    QHash<xcb_window_t, u_int32_t> m_damageWatches;
+    QHash<xcb_window_t, SNIProxy*> m_proxies;
 };
 
 

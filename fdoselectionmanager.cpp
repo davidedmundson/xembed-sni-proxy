@@ -69,7 +69,7 @@ FdoSelectionManager::~FdoSelectionManager()
 
 }
 
-void FdoSelectionManager::addDamageWatch(WId client)
+void FdoSelectionManager::addDamageWatch(xcb_window_t client)
 {
     xcb_connection_t *c = QX11Info::connection();
     const auto attribsCookie = xcb_get_window_attributes_unchecked(c, client);
