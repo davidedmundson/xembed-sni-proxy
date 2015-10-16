@@ -43,8 +43,6 @@
 #define SYSTEM_TRAY_BEGIN_MESSAGE   1
 #define SYSTEM_TRAY_CANCEL_MESSAGE  2
 
-static FdoSelectionManager *s_manager = 0;
-
 FdoSelectionManager::FdoSelectionManager()
 {
     //load damage extension
@@ -127,8 +125,6 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
 
 void FdoSelectionManager::initSelection()
 {
-    s_manager = this;
-
     xcb_client_message_event_t ev;
 
     auto cookie = xcb_intern_atom(QX11Info::connection(), false, strlen("MANAGER"), "MANAGER");

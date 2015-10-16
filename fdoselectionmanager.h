@@ -33,8 +33,6 @@ class FdoSelectionManager : public QWindow, public QAbstractNativeEventFilter
     Q_OBJECT
 
 public:
-    static FdoSelectionManager *manager();
-
     FdoSelectionManager();
     ~FdoSelectionManager();
 
