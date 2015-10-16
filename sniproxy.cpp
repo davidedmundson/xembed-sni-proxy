@@ -190,8 +190,6 @@ SNIProxy::~SNIProxy()
 
 void SNIProxy::update()
 {
-
-    //get pixmap (xcb_drawable)
     m_pixmap = QPixmap::fromImage(getImageNonComposite());
     emit NewIcon();
 }
@@ -212,12 +210,6 @@ QImage SNIProxy::getImageNonComposite()
 
     return qimage;
 }
-
-// QImage SNIProxy::getImageComposite()
-// {
-//
-// //     xcb_composite_name_window_pixmap(QX11Info::connection(), m_windowId, )
-// }
 
 //____________properties__________
 
