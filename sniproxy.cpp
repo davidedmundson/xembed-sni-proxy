@@ -44,7 +44,7 @@
 #define SNI_WATCHER_SERVICE_NAME "org.kde.StatusNotifierWatcher"
 #define SNI_WATCHER_PATH "/StatusNotifierWatcher"
 
-static int s_embedSize = 48; //max size of window to embed. We no longer resize the embedded window as Chromium acts stupidly.
+static uint16_t s_embedSize = 48; //max size of window to embed. We no longer resize the embedded window as Chromium acts stupidly.
 
 int SNIProxy::s_serviceCount = 0;
 
@@ -82,7 +82,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     auto reply = statusNotifierWatcher->RegisterStatusNotifierItem(m_dbus.baseService());
     reply.waitForFinished();
     if (reply.isError()) {
-        qWarning() << "could not register SNI:" << reply.error().errorString();
+        qWarning() << "could not register SNI:" << reply.error().message();
     }
 
     auto c = QX11Info::connection();
@@ -173,7 +173,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     //show the embedded window otherwise nothing happens
     xcb_map_window(c, wid);
 
-    xcb_clear_area(c, 0, wid, 0, 0, qMax(clientGeom->width, s_embedSize), qMax(clientGeom->height, s_embedSize));
+    xcb_clear_area(c, 0, wid, 0, 0, qMin(clientGeom->width, s_embedSize), qMin(clientGeom->height, s_embedSize));
 
     xcb_flush(c);
 
