@@ -45,5 +45,7 @@ int main(int argc, char ** argv)
     FdoSelectionManager manager;
 
     app.exec();
+
+    delete Xcb::atoms;
     return 0;
 }
