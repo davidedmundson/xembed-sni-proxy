@@ -41,7 +41,9 @@
 #include "statusnotifieritemadaptor.h"
 #include "statusnotifierwatcher_interface.h"
 
-static const char s_statusNotifierWatcherServiceName[] = "org.kde.StatusNotifierWatcher";
+#define SNI_WATCHER_SERVICE_NAME "org.kde.StatusNotifierWatcher"
+#define SNI_WATCHER_PATH "/StatusNotifierWatcher"
+
 static int s_embedSize = 48; //max size of window to embed. We no longer resize the embedded window as Chromium acts stupidly.
 
 int SNIProxy::s_serviceCount = 0;
@@ -76,8 +78,12 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
     new StatusNotifierItemAdaptor(this);
     m_dbus.registerObject("/StatusNotifierItem", this);
 
-    auto statusNotifierWatcher = new org::kde::StatusNotifierWatcher(s_statusNotifierWatcherServiceName, "/StatusNotifierWatcher", QDBusConnection::sessionBus(), this);
-    statusNotifierWatcher->RegisterStatusNotifierItem(m_dbus.baseService());
+    auto statusNotifierWatcher = new org::kde::StatusNotifierWatcher(SNI_WATCHER_SERVICE_NAME, SNI_WATCHER_PATH, QDBusConnection::sessionBus(), this);
+    auto reply = statusNotifierWatcher->RegisterStatusNotifierItem(m_dbus.baseService());
+    reply.waitForFinished();
+    if (reply.isError()) {
+        qWarning() << "could not register SNI:" << reply.error().errorString();
+    }
 
     auto c = QX11Info::connection();
 
