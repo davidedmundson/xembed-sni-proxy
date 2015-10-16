@@ -19,6 +19,8 @@ find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
     DBus
     Gui
     X11Extras
+    Widgets #needed solely for test
+    Test
 )
 
 include(KDEInstallDirs)
@@ -94,3 +96,4 @@ target_link_libraries(xembedsniproxy
 install(TARGETS xembedsniproxy ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 install(FILES xembedsniproxy.desktop DESTINATION ${KDE_INSTALL_AUTOSTARTDIR})
 
+add_subdirectory(test)
