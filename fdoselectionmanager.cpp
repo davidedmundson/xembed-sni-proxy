@@ -47,8 +47,6 @@ static FdoSelectionManager *s_manager = 0;
 
 FdoSelectionManager::FdoSelectionManager()
 {
-    initSelection();
-
     //load damage extension
     xcb_connection_t *c = QX11Info::connection();
     xcb_prefetch_extension_data(c, &xcb_damage_id);
@@ -57,6 +55,10 @@ FdoSelectionManager::FdoSelectionManager()
     if (reply->present) {
         xcb_damage_query_version_unchecked(c, XCB_DAMAGE_MAJOR_VERSION, XCB_DAMAGE_MINOR_VERSION);
     }
+
+    qApp->installNativeEventFilter(this);
+
+    initSelection();
 }
 
 FdoSelectionManager::~FdoSelectionManager()
@@ -146,8 +148,6 @@ void FdoSelectionManager::initSelection()
                             XCB_CURRENT_TIME);
 
     xcb_send_event(QX11Info::connection(), false, QX11Info::appRootWindow(), 0xFFFFFF, (char *) &ev);
-
-    qApp->installNativeEventFilter(this);
 }
 
 void FdoSelectionManager::dock(xcb_window_t winId)

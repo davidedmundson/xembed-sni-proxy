@@ -49,7 +49,6 @@ private:
 
     uint8_t m_damageEventBase;
 
-
     QHash<WId, u_int32_t> m_damageWatches;
     QHash<WId, SNIProxy*> m_proxies;
 };
