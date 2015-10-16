@@ -49,6 +49,12 @@ find_package(XCB
 
 add_definitions(-Wall -std=c++11)
 
+add_definitions(-DQT_NO_CAST_TO_ASCII
+-DQT_NO_CAST_FROM_ASCII
+-DQT_NO_URL_CAST_FROM_STRING
+-DQT_NO_CAST_FROM_BYTEARRAY)
+
+
 set(XEMBED_SNI_PROXY_SOURCES
     main.cpp
     fdoselectionmanager.cpp

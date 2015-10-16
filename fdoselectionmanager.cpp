@@ -49,9 +49,13 @@ FdoSelectionManager::FdoSelectionManager()
     xcb_connection_t *c = QX11Info::connection();
     xcb_prefetch_extension_data(c, &xcb_damage_id);
     const auto *reply = xcb_get_extension_data(c, &xcb_damage_id);
-    m_damageEventBase = reply->first_event;
     if (reply->present) {
+        m_damageEventBase = reply->first_event;
         xcb_damage_query_version_unchecked(c, XCB_DAMAGE_MAJOR_VERSION, XCB_DAMAGE_MINOR_VERSION);
+    } else {
+        //no XDamage means
+        qCritical() << "could not load damage extension. Quitting";
+        qApp->exit(-1);
     }
 
     qApp->installNativeEventFilter(this);

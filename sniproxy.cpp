@@ -71,14 +71,14 @@ SNIProxy::SNIProxy(xcb_window_t wid, QObject* parent):
     //Work round a bug in our SNIWatcher with multiple SNIs per connection.
     //there is an undocumented feature that you can register an SNI by path, however it doesn't detect an object on a service being removed, only the entire service closing
     //instead lets use one DBus connection per SNI
-    m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QString("XembedSniProxy%1").arg(s_serviceCount++))),
+    m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("XembedSniProxy%1").arg(s_serviceCount++))),
     m_windowId(wid)
 {
     //create new SNI
     new StatusNotifierItemAdaptor(this);
-    m_dbus.registerObject("/StatusNotifierItem", this);
+    m_dbus.registerObject(QStringLiteral("/StatusNotifierItem"), this);
 
-    auto statusNotifierWatcher = new org::kde::StatusNotifierWatcher(SNI_WATCHER_SERVICE_NAME, SNI_WATCHER_PATH, QDBusConnection::sessionBus(), this);
+    auto statusNotifierWatcher = new org::kde::StatusNotifierWatcher(QStringLiteral(SNI_WATCHER_SERVICE_NAME), QStringLiteral(SNI_WATCHER_PATH), QDBusConnection::sessionBus(), this);
     auto reply = statusNotifierWatcher->RegisterStatusNotifierItem(m_dbus.baseService());
     reply.waitForFinished();
     if (reply.isError()) {
@@ -215,7 +215,7 @@ QImage SNIProxy::getImageNonComposite()
 
 QString SNIProxy::Category() const
 {
-    return "ApplicationStatus";
+    return QStringLiteral("ApplicationStatus");
 }
 
 QString SNIProxy::Id() const
@@ -236,7 +236,7 @@ bool SNIProxy::ItemIsMenu() const
 
 QString SNIProxy::Status() const
 {
-    return "Active";
+    return QStringLiteral("Active");
 }
 
 QString SNIProxy::Title() const
@@ -269,7 +269,7 @@ void SNIProxy::SecondaryActivate(int x, int y)
 
 void SNIProxy::Scroll(int delta, const QString& orientation)
 {
-    if (orientation == "vertical") {
+    if (orientation == QLatin1String("vertical")) {
         sendClick(delta > 0 ? XCB_BUTTON_INDEX_4: XCB_BUTTON_INDEX_5, 0, 0);
     } else {
     }
