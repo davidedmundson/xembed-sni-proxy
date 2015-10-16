@@ -66,23 +66,18 @@ xembed_message_send(xcb_window_t towin,
 
 SNIProxy::SNIProxy(WId wid, QObject* parent):
     QObject(parent),
+    //Work round a bug in our SNIWatcher with multiple SNIs per connection.
+    //there is an undocumented feature that you can register an SNI by path, however it doesn't detect an object on a service being removed, only the entire service closing
+    //instead lets use one DBus connection per SNI
+    m_dbus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, QString("XembedSniProxy%1").arg(s_serviceCount++))),
     m_windowId(wid)
-    // in order to have 2 SNIs we need to have 2 connections to DBus.. Do not simply use QDbusConnnection::sessionBus here
-    //Ideally we should change the spec to pass a Path name along with a service name in RegisterItem as this is silly
 {
     //create new SNI
     new StatusNotifierItemAdaptor(this);
-    const QString path = QString("/StatusNotifierItem").arg(s_serviceCount++);
-    QDBusConnection::sessionBus().registerObject(path, this);
+    m_dbus.registerObject("/StatusNotifierItem", this);
 
-
-    qDebug() << "registering SNI at " << QDBusConnection::sessionBus().baseService() << path;
     auto statusNotifierWatcher = new org::kde::StatusNotifierWatcher(s_statusNotifierWatcherServiceName, "/StatusNotifierWatcher", QDBusConnection::sessionBus(), this);
-    auto reply = statusNotifierWatcher->RegisterStatusNotifierItem(path);
-    reply.waitForFinished();
-    if (reply.isError()) {
-        qWarning() << "could not register SNI";
-    }
+    statusNotifierWatcher->RegisterStatusNotifierItem(m_dbus.baseService());
 
     auto c = QX11Info::connection();
 
@@ -187,6 +182,7 @@ SNIProxy::SNIProxy(WId wid, QObject* parent):
 
 SNIProxy::~SNIProxy()
 {
+    QDBusConnection::disconnectFromBus(m_dbus.name());
 }
 
 void SNIProxy::update()
