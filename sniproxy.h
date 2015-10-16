@@ -153,8 +153,6 @@ Q_SIGNALS:
 private:
     void sendClick(uint8_t mouseButton, int x, int y);
     QImage getImageNonComposite();
-
-    QDBusConnection m_dbus;
     WId m_windowId;
     WId m_containerWid;
     static int s_serviceCount;
