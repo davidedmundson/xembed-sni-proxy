@@ -27,6 +27,8 @@
 #include <QDBusObjectPath>
 #include <QPixmap>
 
+#include <xcb/xcb.h>
+
 #include "snidbus.h"
 
 class SNIProxy : public QObject
@@ -49,7 +51,7 @@ class SNIProxy : public QObject
 //     Q_PROPERTY(QString IconThemePath READ IconThemePath)
 //     Q_PROPERTY(QDBusObjectPath Menu READ Menu)
 public:
-    SNIProxy(WId wid, QObject *parent=0);
+    SNIProxy(xcb_window_t wid, QObject *parent=0);
     ~SNIProxy();
 
     void update();
@@ -155,8 +157,8 @@ private:
     QImage getImageNonComposite();
 
     QDBusConnection m_dbus;
-    WId m_windowId;
-    WId m_containerWid;
+    xcb_window_t m_windowId;
+    xcb_window_t m_containerWid;
     static int s_serviceCount;
     QPixmap m_pixmap;
 };

@@ -66,7 +66,7 @@ xembed_message_send(xcb_window_t towin,
     xcb_send_event(QX11Info::connection(), false, towin, XCB_EVENT_MASK_NO_EVENT, (char *) &ev);
 }
 
-SNIProxy::SNIProxy(WId wid, QObject* parent):
+SNIProxy::SNIProxy(xcb_window_t wid, QObject* parent):
     QObject(parent),
     //Work round a bug in our SNIWatcher with multiple SNIs per connection.
     //there is an undocumented feature that you can register an SNI by path, however it doesn't detect an object on a service being removed, only the entire service closing
