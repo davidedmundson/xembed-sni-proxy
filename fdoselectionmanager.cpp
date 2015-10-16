@@ -148,13 +148,19 @@ void FdoSelectionManager::initSelection()
 
 void FdoSelectionManager::dock(xcb_window_t winId)
 {
-    qDebug() << "docking";
+    if (m_proxies.contains(winId)) {
+        return;
+    }
+
     addDamageWatch(winId);
     m_proxies[winId] = new SNIProxy(winId, this);
 }
 
 void FdoSelectionManager::undock(xcb_window_t winId)
 {
+    if (!m_proxies.contains(winId)) {
+        return;
+    }
     m_proxies[winId]->deleteLater();
     m_proxies.remove(winId);
     //remove the damage watch? The window's gone so is it needed?
