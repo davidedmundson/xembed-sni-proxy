@@ -64,7 +64,7 @@ qt5_add_dbus_interface(XEMBED_SNI_PROXY_SOURCES ${statusnotifierwatcher_xml} sta
 
 add_executable(xembedsniproxy ${XEMBED_SNI_PROXY_SOURCES})
 
-set(kwin_XCB_LIBS
+set(XCB_LIBS
     XCB::XCB
     XCB::XFIXES
     XCB::DAMAGE
@@ -82,7 +82,7 @@ target_link_libraries(xembedsniproxy
     Qt5::X11Extras
     Qt5::DBus
     KF5::WindowSystem
-    ${kwin_XCB_LIBS}
+    ${XCB_LIBS}
 )
 
 install(TARGETS xembedsniproxy ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
