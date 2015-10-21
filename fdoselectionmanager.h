@@ -26,6 +26,7 @@
 
 #include <xcb/xcb.h>
 
+class KSelectionOwner;
 class SNIProxy;
 
 class FdoSelectionManager : public QWindow, public QAbstractNativeEventFilter
@@ -39,8 +40,14 @@ public:
 protected:
     bool nativeEventFilter(const QByteArray & eventType, void * message, long * result) Q_DECL_OVERRIDE;
 
+private Q_SLOTS:
+    void onClaimedOwnership();
+    void onFailedToClaimOwnership();
+    void onLostOwnership();
+
 private:
     void initSelection();
+
     void addDamageWatch(xcb_window_t client);
     void dock(xcb_window_t embed_win);
     void undock(xcb_window_t client);
@@ -49,6 +56,7 @@ private:
 
     QHash<xcb_window_t, u_int32_t> m_damageWatches;
     QHash<xcb_window_t, SNIProxy*> m_proxies;
+    KSelectionOwner *m_selectionOwner;
 };
 
 

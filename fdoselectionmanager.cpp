@@ -29,6 +29,7 @@
 #include <QX11Info>
 
 #include <KWindowSystem>
+#include <KSelectionOwner>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_atom.h>
@@ -43,9 +44,10 @@
 #define SYSTEM_TRAY_BEGIN_MESSAGE   1
 #define SYSTEM_TRAY_CANCEL_MESSAGE  2
 
-FdoSelectionManager::FdoSelectionManager()
+FdoSelectionManager::FdoSelectionManager():
+    m_selectionOwner(new KSelectionOwner(Xcb::atoms->selectionAtom, -1, this))
 {
-    qCDebug(SNIPROXY);
+    qCDebug(SNIPROXY) << "starting";
 
     //load damage extension
     xcb_connection_t *c = QX11Info::connection();
@@ -62,17 +64,16 @@ FdoSelectionManager::FdoSelectionManager()
 
     qApp->installNativeEventFilter(this);
 
-    initSelection();
+    m_selectionOwner->claim(false);
+    connect(m_selectionOwner, &KSelectionOwner::claimedOwnership, this, &FdoSelectionManager::onClaimedOwnership);
+    connect(m_selectionOwner, &KSelectionOwner::failedToClaimOwnership, this, &FdoSelectionManager::onFailedToClaimOwnership);
+    connect(m_selectionOwner, &KSelectionOwner::lostOwnership, this, &FdoSelectionManager::onLostOwnership);
 }
 
 FdoSelectionManager::~FdoSelectionManager()
 {
-    qCDebug(SNIPROXY);
-    xcb_set_selection_owner(QX11Info::connection(),
-                            XCB_NONE,
-                            Xcb::atoms->selectionAtom,
-                            XCB_CURRENT_TIME);
-
+    qCDebug(SNIPROXY) << "closing";
+    m_selectionOwner->release();
 }
 
 void FdoSelectionManager::addDamageWatch(xcb_window_t client)
@@ -181,6 +182,23 @@ void FdoSelectionManager::undock(xcb_window_t winId)
     }
     m_proxies[winId]->deleteLater();
     m_proxies.remove(winId);
+}
+
+void FdoSelectionManager::onClaimedOwnership()
+{
+    qCDebug(SNIPROXY) << "Manager selection claimed";
+}
+
+void FdoSelectionManager::onFailedToClaimOwnership()
+{
+    qCWarning(SNIPROXY) << "failed to claim ownership of Systray Manager";
+    qApp->exit(-1);
+}
+
+void FdoSelectionManager::onLostOwnership()
+{
+    qCWarning(SNIPROXY) << "lost ownership of Systray Manager";
+    qApp->exit(-1);
 }
 
 
