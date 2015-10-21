@@ -26,8 +26,8 @@
 #include <xcb/xcb_image.h>
 
 #include "xcbutils.h"
+#include "debug.h"
 
-#include <QDebug>
 #include <QX11Info>
 #include <QScreen>
 #include <QGuiApplication>
@@ -82,7 +82,7 @@ SNIProxy::SNIProxy(xcb_window_t wid, QObject* parent):
     auto reply = statusNotifierWatcher->RegisterStatusNotifierItem(m_dbus.baseService());
     reply.waitForFinished();
     if (reply.isError()) {
-        qWarning() << "could not register SNI:" << reply.error().message();
+        qCWarning(SNIPROXY) << "could not register SNI:" << reply.error().message();
     }
 
     auto c = QX11Info::connection();
@@ -220,7 +220,7 @@ QString SNIProxy::Category() const
 
 QString SNIProxy::Id() const
 {
-    return QString::number(m_windowId); //TODO
+    return Title();
 }
 
 KDbusImageVector SNIProxy::IconPixmap() const
@@ -272,6 +272,7 @@ void SNIProxy::Scroll(int delta, const QString& orientation)
     if (orientation == QLatin1String("vertical")) {
         sendClick(delta > 0 ? XCB_BUTTON_INDEX_4: XCB_BUTTON_INDEX_5, 0, 0);
     } else {
+        sendClick(delta > 0 ? 6: 7, 0, 0);
     }
 }
 
@@ -284,6 +285,8 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
 
     //note x,y are not actually where the mouse is, but the plasmoid
     //ideally we should make this match the plasmoid hit area
+
+    qCDebug(SNIPROXY) << "Sending click " << mouseButton << to " << x << y;
 
     auto c = QX11Info::connection();
 

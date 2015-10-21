@@ -30,6 +30,8 @@ namespace Xcb {
     Xcb::Atoms* atoms;
 }
 
+Q_LOGGING_CATEGORY(SNIPROXY, "kde.xembedsniproxy", QtDebugMsg) //change to QtInfoMsg near release
+
 int main(int argc, char ** argv)
 {
     //the whole point of this is to interact with X, if we are in any other session, force trying to connect to X

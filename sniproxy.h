@@ -41,15 +41,7 @@ class SNIProxy : public QObject
     Q_PROPERTY(int WindowId READ WindowId)
     Q_PROPERTY(bool ItemIsMenu READ ItemIsMenu)
     Q_PROPERTY(KDbusImageVector IconPixmap READ IconPixmap)
-//     Q_PROPERTY(QString IconName READ IconName)
-//     Q_PROPERTY(QString OverlayIconName READ OverlayIconName)
-//     Q_PROPERTY(KDbusImageVector OverlayIconPixmap READ OverlayIconPixmap)
-//     Q_PROPERTY(QString AttentionIconName READ AttentionIconName)
-//     Q_PROPERTY(KDbusImageVector AttentionIconPixmap READ AttentionIconPixmap)
-//     Q_PROPERTY(QString AttentionMovieName READ AttentionMovieName)
-//     Q_PROPERTY(KDbusToolTipStruct ToolTip READ ToolTip)
-//     Q_PROPERTY(QString IconThemePath READ IconThemePath)
-//     Q_PROPERTY(QDBusObjectPath Menu READ Menu)
+
 public:
     SNIProxy(xcb_window_t wid, QObject *parent=0);
     ~SNIProxy();

@@ -19,7 +19,7 @@
  */
 #include "fdoselectionmanager.h"
 
-#include <QDebug>
+#include "debug.h"
 
 #include <QCoreApplication>
 #include <QHash>
@@ -45,6 +45,8 @@
 
 FdoSelectionManager::FdoSelectionManager()
 {
+    qCDebug(SNIPROXY);
+
     //load damage extension
     xcb_connection_t *c = QX11Info::connection();
     xcb_prefetch_extension_data(c, &xcb_damage_id);
@@ -54,7 +56,7 @@ FdoSelectionManager::FdoSelectionManager()
         xcb_damage_query_version_unchecked(c, XCB_DAMAGE_MAJOR_VERSION, XCB_DAMAGE_MINOR_VERSION);
     } else {
         //no XDamage means
-        qCritical() << "could not load damage extension. Quitting";
+        qCCritical(SNIPROXY) << "could not load damage extension. Quitting";
         qApp->exit(-1);
     }
 
@@ -65,7 +67,7 @@ FdoSelectionManager::FdoSelectionManager()
 
 FdoSelectionManager::~FdoSelectionManager()
 {
-    qDebug() << "unregistering system tray";
+    qCDebug(SNIPROXY);
     xcb_set_selection_owner(QX11Info::connection(),
                             XCB_NONE,
                             Xcb::atoms->selectionAtom,
@@ -75,6 +77,8 @@ FdoSelectionManager::~FdoSelectionManager()
 
 void FdoSelectionManager::addDamageWatch(xcb_window_t client)
 {
+    qCDebug(SNIPROXY) << "adding damage watch for " << client;
+
     xcb_connection_t *c = QX11Info::connection();
     const auto attribsCookie = xcb_get_window_attributes_unchecked(c, client);
 
@@ -95,6 +99,8 @@ void FdoSelectionManager::addDamageWatch(xcb_window_t client)
 
 bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* message, long int* result)
 {
+    Q_UNUSED(result);
+
     if (eventType != "xcb_generic_event_t") {
         return false;
     }
@@ -119,9 +125,13 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
     } else if (responseType == m_damageEventBase + XCB_DAMAGE_NOTIFY) {
         auto damagedWId = reinterpret_cast<xcb_damage_notify_event_t *>(ev)->drawable;
         auto sniProx = m_proxies[damagedWId];
+
         Q_ASSERT(sniProx);
-        sniProx->update();
-        xcb_damage_subtract(QX11Info::connection(), m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
+
+        if(sniProx) {
+            sniProx->update();
+            xcb_damage_subtract(QX11Info::connection(), m_damageWatches[damagedWId], XCB_NONE, XCB_NONE);
+        }
     }
 
     return false;
@@ -152,6 +162,8 @@ void FdoSelectionManager::initSelection()
 
 void FdoSelectionManager::dock(xcb_window_t winId)
 {
+    qCDebug(SNIPROXY) << "trying to dock window " << winId;
+
     if (m_proxies.contains(winId)) {
         return;
     }
@@ -162,12 +174,13 @@ void FdoSelectionManager::dock(xcb_window_t winId)
 
 void FdoSelectionManager::undock(xcb_window_t winId)
 {
+    qCDebug(SNIPROXY) << "trying to undock window " << winId;
+
     if (!m_proxies.contains(winId)) {
         return;
     }
     m_proxies[winId]->deleteLater();
     m_proxies.remove(winId);
-    //remove the damage watch? The window's gone so is it needed?
 }
 
 
