@@ -21,7 +21,8 @@
 #ifndef FDOSELECTIONMANAGER_H
 #define FDOSELECTIONMANAGER_H
 
-#include <QWindow>
+#include <QObject>
+#include <QHash>
 #include <QAbstractNativeEventFilter>
 
 #include <xcb/xcb.h>
@@ -29,7 +30,7 @@
 class KSelectionOwner;
 class SNIProxy;
 
-class FdoSelectionManager : public QWindow, public QAbstractNativeEventFilter
+class FdoSelectionManager : public QObject, public QAbstractNativeEventFilter
 {
     Q_OBJECT
 
@@ -46,8 +47,6 @@ private Q_SLOTS:
     void onLostOwnership();
 
 private:
-    void initSelection();
-
     void addDamageWatch(xcb_window_t client);
     void dock(xcb_window_t embed_win);
     void undock(xcb_window_t client);

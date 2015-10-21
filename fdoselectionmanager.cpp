@@ -45,6 +45,7 @@
 #define SYSTEM_TRAY_CANCEL_MESSAGE  2
 
 FdoSelectionManager::FdoSelectionManager():
+    QObject(),
     m_selectionOwner(new KSelectionOwner(Xcb::atoms->selectionAtom, -1, this))
 {
     qCDebug(SNIPROXY) << "starting";
@@ -136,29 +137,6 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
     }
 
     return false;
-}
-
-void FdoSelectionManager::initSelection()
-{
-    xcb_client_message_event_t ev;
-
-    auto cookie = xcb_intern_atom(QX11Info::connection(), false, strlen("MANAGER"), "MANAGER");
-    ev.response_type = XCB_CLIENT_MESSAGE;
-    ev.window = QX11Info::appRootWindow();
-    ev.format = 32;
-    ev.type = xcb_intern_atom_reply(QX11Info::connection(), cookie, NULL)->atom;
-    ev.data.data32[0] = XCB_CURRENT_TIME;
-    ev.data.data32[1] = Xcb::atoms->selectionAtom;
-    ev.data.data32[2] = winId();
-    ev.data.data32[3] = 0;
-    ev.data.data32[4] = 0;
-
-    xcb_set_selection_owner(QX11Info::connection(),
-                            winId(),
-                            Xcb::atoms->selectionAtom,
-                            XCB_CURRENT_TIME);
-
-    xcb_send_event(QX11Info::connection(), false, QX11Info::appRootWindow(), 0xFFFFFF, (char *) &ev);
 }
 
 void FdoSelectionManager::dock(xcb_window_t winId)
