@@ -85,12 +85,6 @@ public:
      */
     KDbusImageVector IconPixmap() const;
 
-
-    /**
-     * all the data needed for a tooltip
-     */
-//     KDbusToolTipStruct ToolTip() const;
-
 public Q_SLOTS:
     //interaction
     /**
