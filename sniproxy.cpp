@@ -286,7 +286,7 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
     //note x,y are not actually where the mouse is, but the plasmoid
     //ideally we should make this match the plasmoid hit area
 
-    qCDebug(SNIPROXY) << "Sending click " << mouseButton << to " << x << y;
+    qCDebug(SNIPROXY) << "Sending click " << mouseButton << "to" << x << y;
 
     auto c = QX11Info::connection();
 
