@@ -264,7 +264,7 @@ void SNIProxy::ContextMenu(int x, int y)
 
 void SNIProxy::SecondaryActivate(int x, int y)
 {
-    sendClick(XCB_BUTTON_INDEX_1, x, y);
+    sendClick(XCB_BUTTON_INDEX_2, x, y);
 }
 
 void SNIProxy::Scroll(int delta, const QString& orientation)
