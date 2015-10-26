@@ -190,8 +190,33 @@ SNIProxy::~SNIProxy()
 
 void SNIProxy::update()
 {
-    m_pixmap = QPixmap::fromImage(getImageNonComposite());
-    emit NewIcon();
+    const QImage image = getImageNonComposite();
+
+    bool isTransparentImage = true;
+
+    int sum = 0;
+    for (int x = 0; x < image.width(); ++x) {
+        for (int y = 0; y < image.height(); ++y) {
+            sum += qAlpha(image.pixel(x, y));
+            if (sum >= 255) {
+                // There is enough amount of opaque pixels.
+                isTransparentImage = false;
+                break;
+            }
+        }
+    }
+
+    // Update icon only if it is at least partially opaque.
+    // This is just a workaround for X11 bug: xembed icon may suddenly
+    // become transparent for a one or few frames. Reproducible at least
+    // with WINE applications.
+    if (!isTransparentImage) {
+        m_pixmap = QPixmap::fromImage(image);
+        emit NewIcon();
+    }
+    else {
+        qCDebug(SNIPROXY) << "Skip transparent xembed icon";
+    }
 }
 
 void sni_cleanup_xcb_image(void *data) {
