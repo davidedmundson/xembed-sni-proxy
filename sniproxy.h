@@ -18,8 +18,8 @@
  *
  */
 
-#ifndef SNIPROXY_H
-#define SNIPROXY_H
+#ifndef SNI_PROXY_H
+#define SNI_PROXY_H
 
 #include <QObject>
 #include <QDBusArgument>

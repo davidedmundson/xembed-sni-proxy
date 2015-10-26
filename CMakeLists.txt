@@ -7,12 +7,12 @@ if(POLICY CMP0043)
     cmake_policy(SET CMP0043 OLD)
 endif()
 
-find_package(ECM 0.0.11 REQUIRED NO_MODULE)
+find_package(ECM 5.14.0 REQUIRED NO_MODULE)
 include(FeatureSummary)
 include(WriteBasicConfigVersionFile)
 include(GenerateExportHeader)
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR})
+
 
 find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
     Core
@@ -27,6 +27,7 @@ include(KDECompilerSettings)
 
 include(ECMInstallIcons)
 include(ECMOptionalAddSubdirectory)
+include(ECMQtDeclareLoggingCategory)
 
 # required frameworks by Core
 find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
@@ -82,6 +83,11 @@ set(XCB_LIBS
 )
 
 set_package_properties(XCB PROPERTIES TYPE REQUIRED)
+
+ecm_qt_declare_logging_category(xembedsniproxy HEADER debug.h
+                                               IDENTIFIER SNIPROXY
+                                               CATEGORY_NAME kde.xembedsniproxy
+                                               DEFAULT_SEVERITY Debug)
 
 target_link_libraries(xembedsniproxy
     Qt5::Core
