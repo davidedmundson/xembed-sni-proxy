@@ -220,7 +220,7 @@ QString SNIProxy::Category() const
 
 QString SNIProxy::Id() const
 {
-    return Title();
+    return QString::number(m_windowId);
 }
 
 KDbusImageVector SNIProxy::IconPixmap() const
