@@ -21,6 +21,7 @@
 #include <QGuiApplication>
 #include "fdoselectionmanager.h"
 
+#include "debug.h"
 #include "xcbutils.h"
 #include "snidbus.h"
 
@@ -39,6 +40,11 @@ int main(int argc, char ** argv)
     qputenv("QT_QPA_PLATFORM", "xcb");
 
     QGuiApplication app(argc, argv);
+
+    if (app.platformName() != QLatin1String("xcb")) {
+        qFatal("xembed-sni-proxy is only useful XCB. Aborting");
+    }
+
     app.setDesktopSettingsAware(false);
     app.setQuitOnLastWindowClosed(false);
 
