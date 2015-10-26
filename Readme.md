@@ -18,5 +18,13 @@ This project should be portable onto all other DEs that speak SNI.
 
 There are a few extra hacks in the real code to deal with some toolkits being awkward.
 
+##Build instructions
+
+    cmake .
+    make
+    sudo make install
+
+After building, run `xembedsniproxy`.
+
 [1] http://standards.freedesktop.org/systemtray-spec/systemtray-spec-latest.html
 [2] http://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/
