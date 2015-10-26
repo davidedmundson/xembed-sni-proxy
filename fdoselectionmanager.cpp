@@ -84,7 +84,7 @@ void FdoSelectionManager::addDamageWatch(xcb_window_t client)
     xcb_connection_t *c = QX11Info::connection();
     const auto attribsCookie = xcb_get_window_attributes_unchecked(c, client);
 
-    auto damageId = xcb_generate_id(c);
+    const auto damageId = xcb_generate_id(c);
     m_damageWatches[client] = damageId;
     xcb_damage_create(c, damageId, client, XCB_DAMAGE_REPORT_LEVEL_NON_EMPTY);
 
@@ -109,9 +109,9 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
 
     xcb_generic_event_t* ev = static_cast<xcb_generic_event_t *>(message);
 
-    auto responseType = XCB_EVENT_RESPONSE_TYPE(ev);
+    const auto responseType = XCB_EVENT_RESPONSE_TYPE(ev);
     if (responseType == XCB_CLIENT_MESSAGE) {
-        auto ce = reinterpret_cast<xcb_client_message_event_t *>(ev);
+        const auto ce = reinterpret_cast<xcb_client_message_event_t *>(ev);
         if (ce->type == Xcb::atoms->opcodeAtom) {
             switch (ce->data.data32[1]) {
                 case SYSTEM_TRAY_REQUEST_DOCK:
@@ -120,13 +120,13 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
             }
         }
     } else if (responseType == XCB_UNMAP_NOTIFY) {
-        auto unmappedWId = reinterpret_cast<xcb_unmap_notify_event_t *>(ev)->window;
+        const auto unmappedWId = reinterpret_cast<xcb_unmap_notify_event_t *>(ev)->window;
         if (m_proxies[unmappedWId]) {
             undock(unmappedWId);
         }
     } else if (responseType == m_damageEventBase + XCB_DAMAGE_NOTIFY) {
-        auto damagedWId = reinterpret_cast<xcb_damage_notify_event_t *>(ev)->drawable;
-        auto sniProx = m_proxies[damagedWId];
+        const auto damagedWId = reinterpret_cast<xcb_damage_notify_event_t *>(ev)->drawable;
+        const auto sniProx = m_proxies[damagedWId];
 
         Q_ASSERT(sniProx);
 
