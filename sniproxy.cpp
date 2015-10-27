@@ -305,22 +305,37 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
     //note x,y are not actually where the mouse is, but the plasmoid
     //ideally we should make this match the plasmoid hit area
 
-    qCDebug(SNIPROXY) << "Sending click" << mouseButton << "to" << x << y;
+    qCDebug(SNIPROXY) << "Received click" << mouseButton << "with passed x*y" << x << y;
 
     auto c = QX11Info::connection();
 
-    //set our window so the middle is where the mouse is
+    auto cookie = xcb_query_pointer(c, m_windowId);
+    QScopedPointer<xcb_query_pointer_reply_t> pointer(xcb_query_pointer_reply(c, cookie, Q_NULLPTR));
+    /*qCDebug(SNIPROXY) << "samescreen" << pointer->same_screen << endl
+	<< "root x*y" << pointer->root_x << pointer->root_y << endl
+	<< "win x*y" << pointer->win_x << pointer->win_y;*/
+
+    //move our window so the mouse is within its geometry
+    uint32_t configVals[2] = {0, 0};
+    if (mouseButton >= XCB_BUTTON_INDEX_4) {
+	//scroll event, take pointer position
+	configVals[0] = pointer->root_x;
+	configVals[1] = pointer->root_y;
+    } else {
+	if (pointer->root_x > x + s_embedSize)
+	    configVals[0] = pointer->root_x - s_embedSize + 1;
+	else
+	    configVals[0] = static_cast<uint32_t>(x);
+	if (pointer->root_y > y + s_embedSize)
+	    configVals[1] = pointer->root_y - s_embedSize + 1;
+	else
+	    configVals[1] = static_cast<uint32_t>(y);
+    }
+    xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, configVals);
+
+    //pull window up
     const uint32_t stackAboveData[] = {XCB_STACK_MODE_ABOVE};
     xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackAboveData);
-
-    const uint32_t config_vals[4] = {
-	static_cast<const uint32_t>(x), static_cast<const uint32_t>(y),
-	s_embedSize, s_embedSize };
-    xcb_configure_window(c, m_containerWid,
-	    XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
-	    XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-	    config_vals
-    );
 
     //mouse down
     {
