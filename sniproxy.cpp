@@ -319,7 +319,7 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
     const uint32_t stackAboveData[] = {XCB_STACK_MODE_ABOVE};
     xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackAboveData);
 
-    const uint32_t config_vals[4] = {x, y, s_embedSize, s_embedSize };
+    const uint32_t config_vals[4] = { static_cast<const uint32_t>(x), static_cast<const uint32_t>(y), s_embedSize, s_embedSize };
     xcb_configure_window(c, m_containerWid,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                              config_vals);
