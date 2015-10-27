@@ -101,9 +101,9 @@ SNIProxy::SNIProxy(xcb_window_t wid, QObject* parent):
                     XCB_COPY_FROM_PARENT,          /* depth         */
                      m_containerWid,               /* window Id     */
                      screen->root,                 /* parent window */
-                     -500, 0,                       /* x, y          */
+                     0, 0,                         /* x, y          */
                      s_embedSize, s_embedSize,     /* width, height */
-                     0,                           /* border_width  */
+                     0,                            /* border_width  */
                      XCB_WINDOW_CLASS_INPUT_OUTPUT,/* class         */
                      screen->root_visual,          /* visual        */
                      mask, values);                /* masks         */
