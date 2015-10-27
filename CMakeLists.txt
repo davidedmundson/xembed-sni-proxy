@@ -7,7 +7,7 @@ if(POLICY CMP0043)
     cmake_policy(SET CMP0043 OLD)
 endif()
 
-find_package(ECM 5.14.0 REQUIRED NO_MODULE)
+find_package(ECM 5.9.0 REQUIRED NO_MODULE)
 include(FeatureSummary)
 include(WriteBasicConfigVersionFile)
 include(GenerateExportHeader)
