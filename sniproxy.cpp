@@ -123,7 +123,7 @@ SNIProxy::SNIProxy(xcb_window_t wid, QObject* parent):
     const uint32_t stackBelowData[] = {XCB_STACK_MODE_BELOW};
     xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackBelowData);
 
-    NETWinInfo wm(c, m_containerWid, screen->root, 0);
+    NETWinInfo wm(c, m_containerWid, screen->root, 0, 0);
     wm.setOpacity(0);
 #endif
 
