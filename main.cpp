@@ -45,6 +45,13 @@ int main(int argc, char ** argv)
         qFatal("xembed-sni-proxy is only useful XCB. Aborting");
     }
 
+    auto disableSessionManagement = [](QSessionManager &sm) {
+        sm.setRestartHint(QSessionManager::RestartNever);
+    };
+    QObject::connect(&app, &QGuiApplication::commitDataRequest, disableSessionManagement);
+    QObject::connect(&app, &QGuiApplication::saveStateRequest, disableSessionManagement);
+
+
     app.setDesktopSettingsAware(false);
     app.setQuitOnLastWindowClosed(false);
 
