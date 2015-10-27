@@ -44,7 +44,7 @@
 #define SNI_WATCHER_SERVICE_NAME "org.kde.StatusNotifierWatcher"
 #define SNI_WATCHER_PATH "/StatusNotifierWatcher"
 
-static uint16_t s_embedSize = 48; //max size of window to embed. We no longer resize the embedded window as Chromium acts stupidly.
+static uint16_t s_embedSize = 32; //const size of windows we are willing to work with
 
 int SNIProxy::s_serviceCount = 0;
 
@@ -157,23 +157,17 @@ SNIProxy::SNIProxy(xcb_window_t wid, QObject* parent):
                              windowMoveConfigVals);
 
 
-    //if the window is a clearly stupid size resize to be something sensible
-    //this is needed as chormium and such when resized just fill the icon with transparent space and only draw in the middle
-    //however spotify does need this as by default the window size is 900px wide.
-    //use an artbitrary heuristic to make sure icons are always sensible
-    if (clientGeom->width < 12 || clientGeom->width > s_embedSize ||
-        clientGeom->height < 12 || clientGeom->height > s_embedSize)
-    {
-        const uint32_t windowMoveConfigVals[2] = { s_embedSize, s_embedSize };
-        xcb_configure_window(c, wid,
-                                XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                                windowMoveConfigVals);
-    }
+    //resize window to match the container size
+    //this avoids any icon scaling
+    const uint32_t windowSizeConfigVals[2] = { s_embedSize, s_embedSize };
+    xcb_configure_window(c, wid,
+			    XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+			    windowSizeConfigVals);
 
     //show the embedded window otherwise nothing happens
     xcb_map_window(c, wid);
 
-    xcb_clear_area(c, 0, wid, 0, 0, qMin(clientGeom->width, s_embedSize), qMin(clientGeom->height, s_embedSize));
+    xcb_clear_area(c, 0, wid, 0, 0, s_embedSize, s_embedSize);
 
     xcb_flush(c);
 
