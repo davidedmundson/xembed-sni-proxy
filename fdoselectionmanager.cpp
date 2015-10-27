@@ -79,7 +79,7 @@ FdoSelectionManager::~FdoSelectionManager()
 
 void FdoSelectionManager::addDamageWatch(xcb_window_t client)
 {
-    qCDebug(SNIPROXY) << "adding damage watch for " << client;
+    qCDebug(SNIPROXY) << "adding damage watch for" << client;
 
     xcb_connection_t *c = QX11Info::connection();
     const auto attribsCookie = xcb_get_window_attributes_unchecked(c, client);
@@ -141,7 +141,7 @@ bool FdoSelectionManager::nativeEventFilter(const QByteArray& eventType, void* m
 
 void FdoSelectionManager::dock(xcb_window_t winId)
 {
-    qCDebug(SNIPROXY) << "trying to dock window " << winId;
+    qCDebug(SNIPROXY) << "trying to dock window" << winId;
 
     if (m_proxies.contains(winId)) {
         return;
@@ -153,7 +153,7 @@ void FdoSelectionManager::dock(xcb_window_t winId)
 
 void FdoSelectionManager::undock(xcb_window_t winId)
 {
-    qCDebug(SNIPROXY) << "trying to undock window " << winId;
+    qCDebug(SNIPROXY) << "trying to undock window" << winId;
 
     if (!m_proxies.contains(winId)) {
         return;
@@ -178,5 +178,3 @@ void FdoSelectionManager::onLostOwnership()
     qCWarning(SNIPROXY) << "lost ownership of Systray Manager";
     qApp->exit(-1);
 }
-
-

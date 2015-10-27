@@ -93,7 +93,7 @@ SNIProxy::SNIProxy(xcb_window_t wid, QObject* parent):
     //create a container window
     auto screen = xcb_setup_roots_iterator (xcb_get_setup (c)).data;
     m_containerWid = xcb_generate_id(c);
-    uint32_t             values[2];
+    uint32_t values[2];
     auto mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT;
     values[0] = screen->black_pixel; //draw a solid background so the embeded icon doesn't get garbage in it
     values[1] = true; //bypass wM
@@ -282,14 +282,14 @@ void SNIProxy::Activate(int x, int y)
     sendClick(XCB_BUTTON_INDEX_1, x, y);
 }
 
-void SNIProxy::ContextMenu(int x, int y)
-{
-    sendClick(XCB_BUTTON_INDEX_3, x, y);
-}
-
 void SNIProxy::SecondaryActivate(int x, int y)
 {
     sendClick(XCB_BUTTON_INDEX_2, x, y);
+}
+
+void SNIProxy::ContextMenu(int x, int y)
+{
+    sendClick(XCB_BUTTON_INDEX_3, x, y);
 }
 
 void SNIProxy::Scroll(int delta, const QString& orientation)
@@ -311,7 +311,7 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
     //note x,y are not actually where the mouse is, but the plasmoid
     //ideally we should make this match the plasmoid hit area
 
-    qCDebug(SNIPROXY) << "Sending click " << mouseButton << "to" << x << y;
+    qCDebug(SNIPROXY) << "Sending click" << mouseButton << "to" << x << y;
 
     auto c = QX11Info::connection();
 
@@ -319,10 +319,15 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
     const uint32_t stackAboveData[] = {XCB_STACK_MODE_ABOVE};
     xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackAboveData);
 
-    const uint32_t config_vals[4] = { static_cast<const uint32_t>(x), static_cast<const uint32_t>(y), s_embedSize, s_embedSize };
+    const uint32_t config_vals[4] = {
+	static_cast<const uint32_t>(x), static_cast<const uint32_t>(y),
+	s_embedSize, s_embedSize };
     xcb_configure_window(c, m_containerWid,
-                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                             config_vals);
+	    XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+	    XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+	    config_vals
+    );
+
     //mouse down
     {
         xcb_button_press_event_t* event = new xcb_button_press_event_t;
@@ -364,13 +369,9 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
         xcb_send_event(c, false, m_windowId, XCB_EVENT_MASK_BUTTON_RELEASE, (char *) event);
         free(event);
     }
+
 #ifndef VISUAL_DEBUG
     const uint32_t stackBelowData[] = {XCB_STACK_MODE_BELOW};
     xcb_configure_window(c, m_containerWid, XCB_CONFIG_WINDOW_STACK_MODE, stackBelowData);
 #endif
-    }
-
-
-
-
-//
+}
