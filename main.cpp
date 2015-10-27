@@ -19,6 +19,8 @@
  */
 
 #include <QGuiApplication>
+#include <QSessionManager>
+
 #include "fdoselectionmanager.h"
 
 #include "debug.h"
