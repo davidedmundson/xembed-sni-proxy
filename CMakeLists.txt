@@ -59,6 +59,7 @@ add_definitions(-DQT_NO_CAST_TO_ASCII
 set(XEMBED_SNI_PROXY_SOURCES
     main.cpp
     fdoselectionmanager.cpp
+    qsingleapplication.cpp
     snidbus.cpp
     sniproxy.cpp
 )

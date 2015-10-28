@@ -18,12 +18,13 @@
  *
  */
 
-#include <QGuiApplication>
 #include <QSessionManager>
+#include <QString>
 
 #include "fdoselectionmanager.h"
 
 #include "debug.h"
+#include "qsingleapplication.h"
 #include "xcbutils.h"
 #include "snidbus.h"
 
@@ -41,8 +42,13 @@ int main(int argc, char ** argv)
     //if the QPA can't load xcb, this app is useless anyway.
     qputenv("QT_QPA_PLATFORM", "xcb");
 
-    QGuiApplication app(argc, argv);
+    QSingleApplication app(argc, argv, QStringLiteral("xembedsniproxy"));
 
+    // allow only one instance
+    if (! app.isFirstInstance()) {
+        qInfo("xembed-sni-proxy is already running. Aborting");
+        return 0;
+    }
     if (app.platformName() != QLatin1String("xcb")) {
         qFatal("xembed-sni-proxy is only useful XCB. Aborting");
     }
