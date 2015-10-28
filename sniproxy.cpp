@@ -217,6 +217,7 @@ void SNIProxy::update()
 	    m_pixmap = m_pixmap.scaled(s_embedSize, s_embedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 	}
         emit NewIcon();
+        emit NewToolTip();
     }
     else {
         qCDebug(SNIPROXY) << "Skip transparent xembed icon for" << m_windowId << Title();
