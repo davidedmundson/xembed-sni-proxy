@@ -44,7 +44,7 @@
 #define SNI_WATCHER_SERVICE_NAME "org.kde.StatusNotifierWatcher"
 #define SNI_WATCHER_PATH "/StatusNotifierWatcher"
 
-static uint16_t s_embedSize = 32; //const size of windows we are willing to work with
+static uint16_t s_embedSize = 32; //max size of window to embed. We no longer resize the embedded window as Chromium acts stupidly.
 
 int SNIProxy::s_serviceCount = 0;
 
@@ -157,17 +157,23 @@ SNIProxy::SNIProxy(xcb_window_t wid, QObject* parent):
                              windowMoveConfigVals);
 
 
-    //resize window to match the container size
-    //this avoids any icon scaling
-    const uint32_t windowSizeConfigVals[2] = { s_embedSize, s_embedSize };
-    xcb_configure_window(c, wid,
-			    XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-			    windowSizeConfigVals);
+    //if the window is a clearly stupid size resize to be something sensible
+    //this is needed as chormium and such when resized just fill the icon with transparent space and only draw in the middle
+    //however spotify does need this as by default the window size is 900px wide.
+    //use an artbitrary heuristic to make sure icons are always sensible
+    if (clientGeom->width > s_embedSize || clientGeom->height > s_embedSize )
+    {
+        const uint32_t windowMoveConfigVals[2] = { s_embedSize, s_embedSize };
+        xcb_configure_window(c, wid,
+                                XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                                windowMoveConfigVals);
+	qCDebug(SNIPROXY) << "Resizing window" << wid << Title() << "from w*h" << clientGeom->width << clientGeom->height;
+    }
 
     //show the embedded window otherwise nothing happens
     xcb_map_window(c, wid);
 
-    xcb_clear_area(c, 0, wid, 0, 0, s_embedSize, s_embedSize);
+    xcb_clear_area(c, 0, wid, 0, 0, qMin(clientGeom->width, s_embedSize), qMin(clientGeom->height, s_embedSize));
 
     xcb_flush(c);
 
@@ -185,6 +191,13 @@ SNIProxy::~SNIProxy()
 void SNIProxy::update()
 {
     m_pixmap = QPixmap::fromImage(getImageNonComposite());
+    int w = m_pixmap.width();
+    int h = m_pixmap.height();
+    if (w != s_embedSize || h != s_embedSize)
+    {
+	qCDebug(SNIPROXY) << "Scaling pixmap of window" << m_windowId << Title() << "from w*h" << w << h;
+	m_pixmap = m_pixmap.scaled(s_embedSize, s_embedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
     emit NewIcon();
 }
 
@@ -284,6 +297,9 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
 
     auto c = QX11Info::connection();
 
+    auto cookieSize = xcb_get_geometry(c, m_windowId);
+    QScopedPointer<xcb_get_geometry_reply_t> clientGeom(xcb_get_geometry_reply(c, cookieSize, Q_NULLPTR));
+
     auto cookie = xcb_query_pointer(c, m_windowId);
     QScopedPointer<xcb_query_pointer_reply_t> pointer(xcb_query_pointer_reply(c, cookie, Q_NULLPTR));
     /*qCDebug(SNIPROXY) << "samescreen" << pointer->same_screen << endl
@@ -297,12 +313,12 @@ void SNIProxy::sendClick(uint8_t mouseButton, int x, int y)
 	configVals[0] = pointer->root_x;
 	configVals[1] = pointer->root_y;
     } else {
-	if (pointer->root_x > x + s_embedSize)
-	    configVals[0] = pointer->root_x - s_embedSize + 1;
+	if (pointer->root_x > x + clientGeom->width)
+	    configVals[0] = pointer->root_x - clientGeom->width + 1;
 	else
 	    configVals[0] = static_cast<uint32_t>(x);
-	if (pointer->root_y > y + s_embedSize)
-	    configVals[1] = pointer->root_y - s_embedSize + 1;
+	if (pointer->root_y > y + clientGeom->height)
+	    configVals[1] = pointer->root_y - clientGeom->height + 1;
 	else
 	    configVals[1] = static_cast<uint32_t>(y);
     }
