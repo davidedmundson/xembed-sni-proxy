@@ -190,15 +190,37 @@ SNIProxy::~SNIProxy()
 
 void SNIProxy::update()
 {
-    m_pixmap = QPixmap::fromImage(getImageNonComposite());
-    int w = m_pixmap.width();
-    int h = m_pixmap.height();
-    if (w != s_embedSize || h != s_embedSize)
-    {
-	qCDebug(SNIPROXY) << "Scaling pixmap of window" << m_windowId << Title() << "from w*h" << w << h;
-	m_pixmap = m_pixmap.scaled(s_embedSize, s_embedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    const QImage image = getImageNonComposite();
+
+    bool isTransparentImage = true;
+    int w = image.width();
+    int h = image.height();
+
+    for (int x = 0; x < w; ++x) {
+	for (int y = 0; y < h; ++y) {
+	    if (qAlpha(image.pixel(x, y))) {
+		// Found an opaque pixel.
+		isTransparentImage = false;
+		break;
+	    }
+	}
     }
-    emit NewIcon();
+
+    // Update icon only if it is at least partially opaque.
+    // This is just a workaround for X11 bug: xembed icon may suddenly
+    // become transparent for a one or few frames. Reproducible at least
+    // with WINE applications.
+    if (!isTransparentImage) {
+        m_pixmap = QPixmap::fromImage(image);
+	if (w != s_embedSize || h != s_embedSize) {
+	    qCDebug(SNIPROXY) << "Scaling pixmap of window" << m_windowId << Title() << "from w*h" << w << h;
+	    m_pixmap = m_pixmap.scaled(s_embedSize, s_embedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+	}
+        emit NewIcon();
+    }
+    else {
+        qCDebug(SNIPROXY) << "Skip transparent xembed icon for" << m_windowId << Title();
+    }
 }
 
 void sni_cleanup_xcb_image(void *data) {
