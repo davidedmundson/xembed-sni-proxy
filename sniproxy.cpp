@@ -192,11 +192,15 @@ void SNIProxy::update()
 {
     const QImage image = getImageNonComposite();
 
-    bool isTransparentImage = true;
     int w = image.width();
     int h = image.height();
 
-    for (int x = 0; x < w; ++x) {
+    // check for the center and sub-center pixels first and avoid full image scan
+    bool isTransparentImage = qAlpha(image.pixel(w >> 1, h >> 1)) + qAlpha(image.pixel(w >> 2, h >> 2)) == 0;
+
+    // skip scan altogether if sub-center pixel found to be opaque
+    // and break out from the outer loop too on full scan
+    for (int x = 0; x < w && isTransparentImage; ++x) {
 	for (int y = 0; y < h; ++y) {
 	    if (qAlpha(image.pixel(x, y))) {
 		// Found an opaque pixel.
