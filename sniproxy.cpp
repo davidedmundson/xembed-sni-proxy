@@ -34,6 +34,7 @@
 #include <QTimer>
 
 #include <QPainter>
+#include <QRasterWindow>
 
 #include <KWindowSystem>
 #include <netwm.h>
@@ -47,6 +48,20 @@
 static uint16_t s_embedSize = 48; //max size of window to embed. We no longer resize the embedded window as Chromium acts stupidly.
 
 int SNIProxy::s_serviceCount = 0;
+// #define VISUAL_DEBUG
+
+class DaveRasterWindow : public QRasterWindow
+{
+    void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
+};
+
+void DaveRasterWindow::paintEvent(QPaintEvent* event)
+{
+    QPainter painter(this);
+    const QRect rect(QPoint(0, 0), geometry().size());
+    painter.setCompositionMode(QPainter::CompositionMode_Clear);
+    painter.fillRect(rect, Qt::transparent);
+}
 
 void
 xembed_message_send(xcb_window_t towin,
@@ -92,21 +107,30 @@ SNIProxy::SNIProxy(xcb_window_t wid, QObject* parent):
 
     //create a container window
     auto screen = xcb_setup_roots_iterator (xcb_get_setup (c)).data;
-    m_containerWid = xcb_generate_id(c);
-    uint32_t             values[2];
-    auto mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT;
-    values[0] = screen->black_pixel; //draw a solid background so the embeded icon doesn't get garbage in it
-    values[1] = true; //bypass wM
-    xcb_create_window (c,                          /* connection    */
-                    XCB_COPY_FROM_PARENT,          /* depth         */
-                     m_containerWid,               /* window Id     */
-                     screen->root,                 /* parent window */
-                     -500, 0,                       /* x, y          */
-                     s_embedSize, s_embedSize,     /* width, height */
-                     0,                           /* border_width  */
-                     XCB_WINDOW_CLASS_INPUT_OUTPUT,/* class         */
-                     screen->root_visual,          /* visual        */
-                     mask, values);                /* masks         */
+//     m_containerWid = xcb_generate_id(c);
+//     uint32_t             values[2];
+//     auto mask = XCB_CW_BACK_PIXEL | XCB_CW_OVERRIDE_REDIRECT;
+//     values[0] = screen->black_pixel; //draw a solid background so the embeded icon doesn't get garbage in it
+//     values[1] = true; //bypass wM
+//     xcb_create_window (c,                          /* connection    */
+//                     XCB_COPY_FROM_PARENT,          /* depth         */
+//                      m_containerWid,               /* window Id     */
+//                      screen->root,                 /* parent window */
+//                      -500, 0,                       /* x, y          */
+//                      s_embedSize, s_embedSize,     /* width, height */
+//                      0,                           /* border_width  */
+//                      XCB_WINDOW_CLASS_INPUT_OUTPUT,/* class         */
+//                      screen->root_visual,          /* visual        */
+//                      mask, values);                /* masks         */
+
+
+    m_containerWindow = new DaveRasterWindow();
+    QSurfaceFormat format = m_containerWindow->requestedFormat();
+    format.setAlphaBufferSize(8);
+    m_containerWindow->setFormat(format);
+
+    m_containerWindow->resize(s_embedSize, s_embedSize);
+    m_containerWid = m_containerWindow->winId();
 
     /*
         We need the window to exist and be mapped otherwise the child won't render it's contents
@@ -127,9 +151,10 @@ SNIProxy::SNIProxy(xcb_window_t wid, QObject* parent):
     wm.setOpacity(0);
 #endif
 
-    xcb_flush(c);
 
-    xcb_map_window(c, m_containerWid);
+//     xcb_map_window(c, m_containerWid);
+    m_containerWindow->show();
+    xcb_flush(c);
 
     xcb_reparent_window(c, wid,
                         m_containerWid,
@@ -190,6 +215,7 @@ SNIProxy::~SNIProxy()
 
 void SNIProxy::update()
 {
+    m_containerWindow->update();
     const QImage image = getImageNonComposite();
 
     bool isTransparentImage = true;

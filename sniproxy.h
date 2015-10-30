@@ -31,6 +31,8 @@
 
 #include "snidbus.h"
 
+class QRasterWindow;
+
 class SNIProxy : public QObject
 {
     Q_OBJECT
@@ -145,6 +147,7 @@ private:
     QDBusConnection m_dbus;
     xcb_window_t m_windowId;
     xcb_window_t m_containerWid;
+    QRasterWindow *m_containerWindow;
     static int s_serviceCount;
     QPixmap m_pixmap;
 };
