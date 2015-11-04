@@ -2,6 +2,6 @@
 
 Code is merged in plasma-workspace
 
-All commits, bugs changes should go there.
+All commits, bugs changes should go there as I won't check here, and merging it harder.
 
-I won't check here
+Thanks for all the testing!
